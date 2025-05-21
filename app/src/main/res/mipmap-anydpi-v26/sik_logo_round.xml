@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <background android:drawable="@drawable/sik_logo_foreground"/>
-    <foreground android:drawable="@mipmap/sik_logo_forground"/>
+    <background android:drawable="@drawable/sik_logo_background"/>
+    <foreground android:drawable="@mipmap/sik_logo_foreground"/>
 </adaptive-icon>

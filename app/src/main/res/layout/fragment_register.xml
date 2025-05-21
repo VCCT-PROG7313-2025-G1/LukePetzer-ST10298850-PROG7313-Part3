@@ -44,14 +44,35 @@
             android:padding="24dp">
 
             <TextView
-                android:id="@+id/tvLoginTitle"
+                android:id="@+id/tvRegisterTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Login to your account"
+                android:text="Create your account"
                 android:textSize="20sp"
                 android:textColor="#262626"
                 android:fontFamily="sans-serif"
                 android:layout_marginBottom="24dp"/>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Name"
+                app:boxCornerRadiusTopStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusBottomEnd="12dp"
+                android:layout_marginBottom="16dp"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textPersonName"
+                    android:drawablePadding="8dp"/>
+
+            </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilEmail"
@@ -99,10 +120,10 @@
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnSignIn"
+                android:id="@+id/btnRegister"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
-                android:text="Sign In"
+                android:text="Register"
                 android:textColor="#FFFFFF"
                 android:backgroundTint="#3B82F6"
                 app:cornerRadius="8dp"/>
@@ -112,22 +133,10 @@
     </androidx.cardview.widget.CardView>
 
     <TextView
-        android:id="@+id/tvForgotPassword"
+        android:id="@+id/tvLogin"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Forgot your password?"
-        android:textColor="#525252"
-        android:textSize="14sp"
-        app:layout_constraintBottom_toTopOf="@id/tvSignUp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginBottom="16dp"/>
-
-    <TextView
-        android:id="@+id/tvSignUp"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Don't have an account? Sign up"
+        android:text="Already have an account? Login"
         android:textColor="#525252"
         android:textSize="14sp"
         app:layout_constraintBottom_toBottomOf="parent"

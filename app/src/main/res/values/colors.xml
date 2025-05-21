@@ -2,4 +2,10 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="primary_color">#2196F3</color>  <!-- Material Blue -->
+    <color name="primary_dark_color">#1976D2</color>  <!-- Darker Blue -->
+    <color name="accent_color">#FFC107</color>  <!-- Amber -->
+    <color name="background_color">#FFFFFF</color>  <!-- White -->
+    <color name="toolbar_color">#2196F3</color>  <!-- Same as primary_color -->
+    <color name="toolbar_text_color">#FFFFFF</color>  <!-- White text on blue background -->
 </resources>
