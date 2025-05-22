@@ -8,4 +8,5 @@
     <color name="background_color">#FFFFFF</color>  <!-- White -->
     <color name="toolbar_color">#2196F3</color>  <!-- Same as primary_color -->
     <color name="toolbar_text_color">#FFFFFF</color>  <!-- White text on blue background -->
+    <color name="text_color_primary">#000000</color>
 </resources>

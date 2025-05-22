@@ -1,6 +1,7 @@
 package com.example.lukepetzer_st10298850_prog7313_part3
 
 import android.os.Bundle
+import android.view.View
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -8,7 +9,9 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
+import androidx.navigation.ui.setupWithNavController
 import com.example.lukepetzer_st10298850_prog7313_part3.databinding.ActivityMainBinding
+import com.google.android.material.bottomnavigation.BottomNavigationView
 
 class MainActivity : AppCompatActivity() {
 
@@ -30,8 +33,28 @@ class MainActivity : AppCompatActivity() {
         val navController = navHostFragment.navController
 
         // Set up the ActionBar with the NavController
-        appBarConfiguration = AppBarConfiguration(navController.graph)
+        appBarConfiguration = AppBarConfiguration(
+            setOf(
+                R.id.navigation_home,
+                R.id.navigation_stats,
+                R.id.navigation_add,
+                R.id.navigation_budget,
+                R.id.navigation_settings
+            )
+        )
         setupActionBarWithNavController(navController, appBarConfiguration)
+
+        // Set up the BottomNavigationView
+        val bottomNav: BottomNavigationView = binding.bottomNavView
+        bottomNav.setupWithNavController(navController)
+
+        // Hide/show bottom navigation based on destination
+        navController.addOnDestinationChangedListener { _, destination, _ ->
+            when (destination.id) {
+                R.id.loginFragment, R.id.registerFragment -> bottomNav.visibility = View.GONE
+                else -> bottomNav.visibility = View.VISIBLE
+            }
+        }
 
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())

@@ -6,19 +6,47 @@
 
     <fragment
         android:id="@+id/loginFragment"
-        android:name="com.example.lukepetzer_st10298850_prog7313_part3.LoginFragment"
+        android:name="com.example.lukepetzer_st10298850_prog7313_part3.fragments.LoginFragment"
         android:label="Login">
         <action
             android:id="@+id/action_loginFragment_to_registerFragment"
             app:destination="@id/registerFragment" />
+        <action
+            android:id="@+id/action_loginFragment_to_navigation_home"
+            app:destination="@id/navigation_home" />
     </fragment>
 
     <fragment
         android:id="@+id/registerFragment"
-        android:name="com.example.lukepetzer_st10298850_prog7313_part3.RegisterFragment"
+        android:name="com.example.lukepetzer_st10298850_prog7313_part3.fragments.RegisterFragment"
         android:label="Register">
         <action
             android:id="@+id/action_registerFragment_to_loginFragment"
             app:destination="@id/loginFragment" />
     </fragment>
+
+    <fragment
+        android:id="@+id/navigation_home"
+        android:name="com.example.lukepetzer_st10298850_prog7313_part3.fragments.HomeFragment"
+        android:label="Home" />
+
+    <fragment
+        android:id="@+id/navigation_stats"
+        android:name="com.example.lukepetzer_st10298850_prog7313_part3.fragments.StatsFragment"
+        android:label="Stats" />
+
+    <fragment
+        android:id="@+id/navigation_add"
+        android:name="com.example.lukepetzer_st10298850_prog7313_part3.fragments.AddTransactionFragment"
+        android:label="Add" />
+
+    <fragment
+        android:id="@+id/navigation_budget"
+        android:name="com.example.lukepetzer_st10298850_prog7313_part3.fragments.BudgetFragment"
+        android:label="Budget" />
+
+    <fragment
+        android:id="@+id/navigation_settings"
+        android:name="com.example.lukepetzer_st10298850_prog7313_part3.fragments.SettingsFragment"
+        android:label="Settings" />
 </navigation>
