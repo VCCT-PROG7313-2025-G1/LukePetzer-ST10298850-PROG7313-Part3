@@ -105,6 +105,16 @@
             app:iconGravity="textStart"
             app:iconPadding="8dp" />
 
+        <!-- Add this ImageView -->
+        <ImageView
+            android:id="@+id/ivReceiptPreview"
+            android:layout_width="200dp"
+            android:layout_height="200dp"
+            android:layout_marginBottom="16dp"
+            android:scaleType="centerCrop"
+            android:visibility="gone"
+            android:contentDescription="Receipt preview" />
+
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnAddTransaction"
             android:layout_width="match_parent"

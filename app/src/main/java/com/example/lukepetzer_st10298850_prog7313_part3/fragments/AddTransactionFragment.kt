@@ -1,14 +1,25 @@
 package com.example.lukepetzer_st10298850_prog7313_part3.fragments
 
+import android.Manifest
+import android.app.Activity
+import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
-import androidx.fragment.app.Fragment
+import android.os.Environment
+import android.provider.MediaStore
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavOptions
@@ -20,6 +31,8 @@ import com.example.lukepetzer_st10298850_prog7313_part3.data.Transaction
 import com.example.lukepetzer_st10298850_prog7313_part3.databinding.FragmentAddTransactionBinding
 import com.example.lukepetzer_st10298850_prog7313_part3.viewmodels.AddTransactionViewModel
 import kotlinx.coroutines.launch
+import java.io.File
+import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -31,6 +44,45 @@ class AddTransactionFragment : Fragment() {
     private lateinit var viewModel: AddTransactionViewModel
     private var currentUserId: Long = -1
     private var categories: List<Category> = emptyList()
+
+    private var photoUri: Uri? = null
+    private var currentPhotoPath: String? = null
+    private var currentReceiptPath: String? = null
+
+    private val takePictureLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            photoUri?.let { uri ->
+                binding.ivReceiptPreview.setImageURI(uri)
+                binding.ivReceiptPreview.visibility = View.VISIBLE
+                currentReceiptPath = currentPhotoPath
+            }
+        }
+    }
+
+    private val pickImageLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            result.data?.data?.let { uri ->
+                // Copy the image to local storage
+                val localFile = createImageFile()
+                context?.contentResolver?.openInputStream(uri)?.use { input ->
+                    localFile.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                binding.ivReceiptPreview.setImageURI(Uri.fromFile(localFile))
+                binding.ivReceiptPreview.visibility = View.VISIBLE
+                currentReceiptPath = localFile.absolutePath
+            }
+        }
+    }
+
+    private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
+        if (permissions.all { it.value }) {
+            openImagePicker()
+        } else {
+            Toast.makeText(context, "Permission denied", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -46,7 +98,6 @@ class AddTransactionFragment : Fragment() {
         database = AppDatabase.getDatabase(requireContext())
         viewModel = ViewModelProvider(this)[AddTransactionViewModel::class.java]
 
-        // Retrieve the user ID from SharedPreferences
         val sharedPref = requireActivity().getPreferences(Context.MODE_PRIVATE)
         currentUserId = sharedPref.getLong("USER_ID", -1)
 
@@ -73,7 +124,6 @@ class AddTransactionFragment : Fragment() {
     }
 
     private fun setupViews() {
-        // Set default date to today
         val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
         binding.etDate.setText(sdf.format(Date()))
     }
@@ -84,8 +134,7 @@ class AddTransactionFragment : Fragment() {
         }
 
         binding.btnAddReceipt.setOnClickListener {
-            // TODO: Implement add receipt logic
-            Toast.makeText(context, "Add receipt functionality to be implemented", Toast.LENGTH_SHORT).show()
+            checkAndRequestPermissions()
         }
 
         binding.etDate.setOnClickListener {
@@ -94,8 +143,7 @@ class AddTransactionFragment : Fragment() {
     }
 
     private fun addTransaction() {
-        val type =
-            if (binding.toggleGroup.checkedButtonId == R.id.btnIncome) "Income" else "Expense"
+        val type = if (binding.toggleGroup.checkedButtonId == R.id.btnIncome) "Income" else "Expense"
         val amount = binding.etAmount.text.toString().toDoubleOrNull()
         val categoryPosition = binding.spinnerCategory.selectedItemPosition
         val category = categories.getOrNull(categoryPosition)?.name ?: return
@@ -114,7 +162,7 @@ class AddTransactionFragment : Fragment() {
             category = category,
             date = date,
             description = description.ifEmpty { null },
-            receiptUri = null // TODO: Implement receipt handling
+            receiptUri = currentReceiptPath
         )
 
         lifecycleScope.launch {
@@ -123,33 +171,107 @@ class AddTransactionFragment : Fragment() {
                 Toast.makeText(context, "Transaction added successfully", Toast.LENGTH_SHORT).show()
 
                 val navOptions = NavOptions.Builder()
-                    .setPopUpTo(
-                        R.id.navigation_add,
-                        true
-                    ) // This will remove the AddTransactionFragment from the back stack
+                    .setPopUpTo(R.id.navigation_add, true)
                     .build()
                 findNavController().navigate(R.id.navigation_home, null, navOptions)
             } catch (e: Exception) {
-                Toast.makeText(context, "Error adding transaction: ${e.message}", Toast.LENGTH_LONG)
-                    .show()
+                Toast.makeText(context, "Error adding transaction: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
     }
 
-        private fun showDatePicker() {
-            val calendar = Calendar.getInstance()
-            val year = calendar.get(Calendar.YEAR)
-            val month = calendar.get(Calendar.MONTH)
-            val day = calendar.get(Calendar.DAY_OF_MONTH)
+    private fun showDatePicker() {
+        val calendar = Calendar.getInstance()
+        val year = calendar.get(Calendar.YEAR)
+        val month = calendar.get(Calendar.MONTH)
+        val day = calendar.get(Calendar.DAY_OF_MONTH)
 
-            DatePickerDialog(requireContext(), { _, selectedYear, selectedMonth, selectedDay ->
-                val selectedDate = Calendar.getInstance()
-                selectedDate.set(selectedYear, selectedMonth, selectedDay)
-                val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                binding.etDate.setText(dateFormat.format(selectedDate.time))
-            }, year, month, day).show()
+        DatePickerDialog(requireContext(), { _, selectedYear, selectedMonth, selectedDay ->
+            val selectedDate = Calendar.getInstance()
+            selectedDate.set(selectedYear, selectedMonth, selectedDay)
+            val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+            binding.etDate.setText(dateFormat.format(selectedDate.time))
+        }, year, month, day).show()
+    }
+
+    private fun checkAndRequestPermissions() {
+        val permissionsToRequest = mutableListOf<String>()
+
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            permissionsToRequest.add(Manifest.permission.CAMERA)
         }
 
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.READ_MEDIA_IMAGES) != PackageManager.PERMISSION_GRANTED) {
+                permissionsToRequest.add(Manifest.permission.READ_MEDIA_IMAGES)
+            }
+        } else {
+            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                permissionsToRequest.add(Manifest.permission.READ_EXTERNAL_STORAGE)
+            }
+        }
+
+        if (permissionsToRequest.isNotEmpty()) {
+            requestPermissionLauncher.launch(permissionsToRequest.toTypedArray())
+        } else {
+            openImagePicker()
+        }
+    }
+
+    private fun openImagePicker() {
+        val options = arrayOf<CharSequence>("Take Photo", "Choose from Gallery", "Cancel")
+        val builder = AlertDialog.Builder(requireContext())
+        builder.setTitle("Add Photo!")
+        builder.setItems(options) { dialog, item ->
+            when {
+                options[item] == "Take Photo" -> takePhoto()
+                options[item] == "Choose from Gallery" -> chooseFromGallery()
+                options[item] == "Cancel" -> dialog.dismiss()
+            }
+        }
+        builder.show()
+    }
+
+    private fun takePhoto() {
+        val photoFile: File? = try {
+            createImageFile()
+        } catch (ex: IOException) {
+            Toast.makeText(context, "Error creating image file", Toast.LENGTH_SHORT).show()
+            null
+        }
+
+        photoFile?.also {
+            val photoURI = FileProvider.getUriForFile(
+                requireContext(),
+                "${requireContext().applicationContext.packageName}.provider",
+                it
+            )
+            photoUri = photoURI
+            val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE).apply {
+                putExtra(MediaStore.EXTRA_OUTPUT, photoUri)
+            }
+            takePictureLauncher.launch(intent)
+        }
+    }
+
+    private fun chooseFromGallery() {
+        val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+        pickImageLauncher.launch(intent)
+    }
+
+    @Throws(IOException::class)
+    private fun createImageFile(): File {
+        val timeStamp: String = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        val storageDir: File? = requireContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+        return File.createTempFile(
+            "JPEG_${timeStamp}_",
+            ".jpg",
+            storageDir
+        ).apply {
+            currentPhotoPath = absolutePath
+            currentReceiptPath = absolutePath
+        }
+    }
 
     override fun onDestroyView() {
         super.onDestroyView()
