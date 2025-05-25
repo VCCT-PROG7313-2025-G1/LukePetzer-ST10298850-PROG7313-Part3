@@ -48,5 +48,26 @@
     <fragment
         android:id="@+id/navigation_settings"
         android:name="com.example.lukepetzer_st10298850_prog7313_part3.fragments.SettingsFragment"
-        android:label="Settings" />
+        android:label="Settings">
+        <action
+            android:id="@+id/action_settingsFragment_to_loginFragment"
+            app:destination="@id/loginFragment"
+            app:popUpTo="@id/loginFragment"
+            app:popUpToInclusive="true" />
+        <action
+            android:id="@+id/action_settingsFragment_to_transactionCategoriesFragment"
+            app:destination="@id/transactionCategoriesFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/transactionCategoriesFragment"
+        android:name="com.example.lukepetzer_st10298850_prog7313_part3.fragments.TransactionCategoriesFragment"
+        android:label="Transaction Categories">
+        <action
+            android:id="@+id/action_transactionCategoriesFragment_to_loginFragment"
+            app:destination="@id/loginFragment"
+            app:popUpTo="@id/loginFragment"
+            app:popUpToInclusive="true" />
+    </fragment>
+
 </navigation>

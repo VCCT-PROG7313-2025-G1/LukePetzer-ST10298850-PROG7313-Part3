@@ -5,7 +5,9 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.navigation.fragment.findNavController
 import com.example.lukepetzer_st10298850_prog7313_part3.R
+import com.example.lukepetzer_st10298850_prog7313_part3.databinding.FragmentSettingsBinding
 
 // TODO: Rename parameter arguments, choose names that match
 // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -22,6 +24,9 @@ class SettingsFragment : Fragment() {
     private var param1: String? = null
     private var param2: String? = null
 
+    private var _binding: FragmentSettingsBinding? = null
+    private val binding get() = _binding!!
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {
@@ -33,9 +38,52 @@ class SettingsFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_settings, container, false)
+    ): View {
+        _binding = FragmentSettingsBinding.inflate(inflater, container, false)
+        return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        setupClickListeners()
+    }
+
+    private fun setupClickListeners() {
+        // Navigate to Transaction Categories
+        binding.llTransactionCategories.setOnClickListener {
+            findNavController().navigate(R.id.action_settingsFragment_to_transactionCategoriesFragment)
+        }
+
+        // Toggle Notifications
+        binding.switchNotifications.setOnCheckedChangeListener { _, isChecked ->
+            // TODO: Implement notification toggle logic
+            // For example, you could save the preference to SharedPreferences
+        }
+
+        // Navigate to Help & Support
+        binding.llHelpSupport.setOnClickListener {
+            // TODO: Implement navigation to Help & Support page
+            // For example: findNavController().navigate(R.id.action_settingsFragment_to_helpSupportFragment)
+        }
+
+        // Sign Out
+        binding.btnSignOut.setOnClickListener {
+            signOut()
+        }
+    }
+
+    private fun signOut() {
+        // TODO: Implement sign out logic here
+        // For example, clear user session, SharedPreferences, etc.
+
+        // Navigate back to the login page
+        findNavController().navigate(R.id.action_settingsFragment_to_loginFragment)
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 
     companion object {

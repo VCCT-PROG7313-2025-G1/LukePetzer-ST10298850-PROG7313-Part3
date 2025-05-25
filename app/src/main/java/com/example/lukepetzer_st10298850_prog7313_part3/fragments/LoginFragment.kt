@@ -1,5 +1,6 @@
 package com.example.lukepetzer_st10298850_prog7313_part3.fragments
 
+import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -17,14 +18,15 @@ import kotlinx.coroutines.launch
 class LoginFragment : Fragment() {
 
     private lateinit var userRepository: UserRepository
-    private lateinit var binding: FragmentLoginBinding
+    private var _binding: FragmentLoginBinding? = null
+    private val binding get() = _binding!!
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        binding = FragmentLoginBinding.inflate(inflater, container, false)
+        _binding = FragmentLoginBinding.inflate(inflater, container, false)
         return binding.root
     }
 
@@ -40,14 +42,21 @@ class LoginFragment : Fragment() {
 
             if (username.isNotEmpty() && password.isNotEmpty()) {
                 lifecycleScope.launch {
-                    val user = userRepository.loginUser(username, password)
-                    if (user != null) {
-                        // Login successful
-                        Toast.makeText(context, "Login successful", Toast.LENGTH_SHORT).show()
-                        // Navigate to home fragment
-                        findNavController().navigate(R.id.action_loginFragment_to_navigation_home)
-                    } else {
-                        Toast.makeText(context, "Invalid credentials", Toast.LENGTH_SHORT).show()
+                    try {
+                        val result = userRepository.loginUser(username, password)
+                        if (result != null) {
+                            // Login successful
+                            val (user, userId) = result
+                            saveUserSession(userId)
+                            Toast.makeText(context, "Login successful", Toast.LENGTH_SHORT).show()
+                            // Navigate to home fragment
+                            findNavController().navigate(R.id.action_loginFragment_to_navigation_home)
+                        } else {
+                            Toast.makeText(context, "Invalid credentials", Toast.LENGTH_SHORT).show()
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        Toast.makeText(context, "An error occurred: ${e.message}", Toast.LENGTH_LONG).show()
                     }
                 }
             } else {
@@ -64,7 +73,16 @@ class LoginFragment : Fragment() {
         }
     }
 
+    private fun saveUserSession(userId: Long) {
+        val sharedPref = requireActivity().getPreferences(Context.MODE_PRIVATE)
+        with(sharedPref.edit()) {
+            putLong("USER_ID", userId)
+            apply()
+        }
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
+        _binding = null
     }
 }

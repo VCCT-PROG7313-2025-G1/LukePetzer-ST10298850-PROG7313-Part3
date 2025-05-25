@@ -8,8 +8,13 @@ class UserRepository(private val userDao: UserDao) {
         return userDao.insertUser(user)
     }
 
-    suspend fun loginUser(username: String, password: String): User? {
-        return userDao.getUserByUsernameAndPassword(username, password)
+    suspend fun loginUser(username: String, password: String): Pair<User, Long>? {
+        val user = userDao.getUserByUsernameAndPassword(username, password)
+        return if (user != null) {
+            Pair(user, user.userId)
+        } else {
+            null
+        }
     }
 
     suspend fun updateLoginStreak(userId: Long, streak: Int, date: Long) {
