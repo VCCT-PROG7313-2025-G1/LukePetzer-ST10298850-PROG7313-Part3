@@ -15,4 +15,7 @@ interface UserDao {
 
     @Query("UPDATE users SET loginStreak = :streak, lastLoginDate = :date WHERE userId = :userId")
     suspend fun updateLoginStreak(userId: Long, streak: Int, date: Long)
+
+    @Query("SELECT COUNT(*) FROM users")
+    suspend fun getUserCount(): Int
 }
