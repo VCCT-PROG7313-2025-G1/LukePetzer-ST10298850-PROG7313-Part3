@@ -36,6 +36,8 @@ import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
 
+
+
 class AddTransactionFragment : Fragment() {
 
     private var _binding: FragmentAddTransactionBinding? = null
@@ -147,11 +149,20 @@ class AddTransactionFragment : Fragment() {
         val amount = binding.etAmount.text.toString().toDoubleOrNull()
         val categoryPosition = binding.spinnerCategory.selectedItemPosition
         val category = categories.getOrNull(categoryPosition)?.name ?: return
-        val date = binding.etDate.text.toString()
+        val dateString = binding.etDate.text.toString()
         val description = binding.etDescription.text.toString()
 
         if (amount == null) {
             Toast.makeText(context, "Please enter a valid amount", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        // Convert String to Date
+        val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+        val date = try {
+            dateFormat.parse(dateString)
+        } catch (e: Exception) {
+            Toast.makeText(context, "Invalid date format", Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -160,7 +171,7 @@ class AddTransactionFragment : Fragment() {
             type = type,
             amount = amount,
             category = category,
-            date = date,
+            date = date, // Now passing a Date object
             description = description.ifEmpty { null },
             receiptUri = currentReceiptPath
         )
