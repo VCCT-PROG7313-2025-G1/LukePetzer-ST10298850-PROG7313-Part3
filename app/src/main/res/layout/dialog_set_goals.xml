@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <EditText
+        android:id="@+id/etShortTermGoal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Short-Term Goal"
+        android:inputType="numberDecimal" />
+
+    <EditText
+        android:id="@+id/etMaxGoal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Maximum Goal"
+        android:inputType="numberDecimal"
+        android:layout_marginTop="12dp"/>
+</LinearLayout>

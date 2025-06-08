@@ -1,14 +1,248 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
+<androidx.core.widget.NestedScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".fragments.StatsFragment">
+    android:background="@color/background_color"
+    android:fillViewport="true">
 
-    <!-- TODO: Update blank fragment layout -->
-    <TextView
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:text="@string/hello_blank_fragment" />
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
 
-</FrameLayout>
+        <!-- Title -->
+        <TextView
+            android:id="@+id/tvStatsTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Statistics Overview"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_color_primary"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Monthly Summary Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cvMonthlySummary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="@color/card_background"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            android:layout_marginBottom="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <!-- Income -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Total Income"
+                    android:textColor="@color/text_color_secondary" />
+
+                <TextView
+                    android:id="@+id/tvTotalIncome"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="R0.00"
+                    android:textSize="18sp"
+                    android:textColor="@color/text_color_primary" />
+
+                <!-- Expenses -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Total Expenses"
+                    android:textColor="@color/text_color_secondary"
+                    android:layout_marginTop="8dp" />
+
+                <TextView
+                    android:id="@+id/tvTotalExpenses"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="R0.00"
+                    android:textSize="18sp"
+                    android:textColor="@color/text_color_primary" />
+
+                <!-- Remaining Budget -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Remaining Budget"
+                    android:textColor="@color/text_color_secondary"
+                    android:layout_marginTop="8dp" />
+
+                <TextView
+                    android:id="@+id/tvRemainingBudget"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="R0.00"
+                    android:textSize="18sp"
+                    android:textColor="@color/text_color_primary" />
+
+                <!-- Spending Progress -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Spending Progress"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_color_primary"
+                    android:layout_marginTop="16dp" />
+
+                <ProgressBar
+                    android:id="@+id/pbBudgetUsage"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:max="100"
+                    android:progress="0"
+                    android:progressTint="@color/progress_green"
+                    android:layout_marginTop="8dp" />
+
+                <TextView
+                    android:id="@+id/tvBudgetUsedLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0% of budget used"
+                    android:textColor="@color/text_color_secondary"
+                    android:layout_marginTop="4dp" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Add this inside the NestedScrollView, after the Monthly Summary Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cvSpendingOverTime"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="@color/card_background"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            android:layout_marginBottom="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Spending Over Time"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_color_primary"
+                    android:layout_marginBottom="8dp" />
+
+                <com.github.mikephil.charting.charts.LineChart
+                    android:id="@+id/lineChart"
+                    android:layout_width="match_parent"
+                    android:layout_height="250dp" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Gamification Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cvGamification"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="@color/card_background"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            android:layout_marginBottom="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Your Budgeting Level"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_color_primary" />
+
+                <ProgressBar
+                    android:id="@+id/pbGamificationProgress"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:progressTint="@color/progress_primary" />
+
+                <TextView
+                    android:id="@+id/tvCurrentLevel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Budget Cadet 🌱"
+                    android:textColor="@color/text_color_primary"
+                    android:layout_marginTop="8dp" />
+
+                <TextView
+                    android:id="@+id/tvNextLevel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Next level in 5 more budgeted days!"
+                    android:textColor="@color/text_color_secondary"
+                    android:layout_marginTop="4dp" />
+
+                <TextView
+                    android:id="@+id/tvStreak"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Current Streak: 4 Days"
+                    android:textColor="@color/text_color_secondary"
+                    android:layout_marginTop="4dp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Achievements / Badges Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cvAchievements"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="@color/card_background"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            android:layout_marginBottom="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Achievements"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_color_primary" />
+
+                <!-- Placeholder or RecyclerView/GridLayout for badges -->
+                <TextView
+                    android:id="@+id/tvAchievementsPlaceholder"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Achievements and badges will be displayed here"
+                    android:textColor="@color/text_color_secondary" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

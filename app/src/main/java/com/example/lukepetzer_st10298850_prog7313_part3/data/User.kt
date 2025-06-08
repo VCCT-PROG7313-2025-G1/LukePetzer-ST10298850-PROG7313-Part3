@@ -12,5 +12,7 @@ data class User(
     @ColumnInfo(name = "password") val password: String,
     @ColumnInfo(name = "name") val name: String,
     var loginStreak: Int = 0,
-    var lastLoginDate: Long = 0
+    var lastLoginDate: Long = 0,
+    var longestStreak: Int = 0,
+    var profilePicture: String? = null
 )

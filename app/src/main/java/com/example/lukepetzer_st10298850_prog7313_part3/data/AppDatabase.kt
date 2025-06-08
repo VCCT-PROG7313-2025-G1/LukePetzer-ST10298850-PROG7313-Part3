@@ -11,13 +11,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-@Database(entities = [User::class, Category::class, Transaction::class], version = 6, exportSchema = false)
+@Database(entities = [User::class, Category::class, Transaction::class, BudgetGoal::class], version = 8, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun userDao(): UserDao
     abstract fun categoryDao(): CategoryDao
     abstract fun transactionDao(): TransactionDao
+    abstract fun budgetGoalDao(): BudgetGoalDao
 
     companion object {
         @Volatile

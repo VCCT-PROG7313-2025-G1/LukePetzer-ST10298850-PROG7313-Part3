@@ -18,4 +18,19 @@ interface TransactionDao {
 
     @Query("SELECT * FROM transactions WHERE userId = :userId AND date BETWEEN :startDate AND :endDate ORDER BY date DESC")
     suspend fun getTransactionsForUserInDateRange(userId: Long, startDate: Date, endDate: Date): List<Transaction>
+
+    @Query("SELECT * FROM transactions WHERE userId = :userId AND category = :category AND date BETWEEN :startDate AND :endDate ORDER BY date DESC")
+    suspend fun getTransactionsForUserByCategoryInDateRange(userId: Long, category: String, startDate: Date, endDate: Date): List<Transaction>
+
+    @Query("SELECT * FROM transactions WHERE userId = :userId AND description LIKE '%' || :keyword || '%' ORDER BY date DESC")
+    suspend fun searchTransactionsByDescription(userId: Long, keyword: String): List<Transaction>
+
+    @Query("SELECT SUM(amount) FROM transactions WHERE userId = :userId AND type = 'Income' AND date BETWEEN :startDate AND :endDate")
+    suspend fun getTotalIncomeForPeriod(userId: Long, startDate: Date, endDate: Date): Double?
+
+    @Query("SELECT SUM(amount) FROM transactions WHERE userId = :userId AND type = 'Expense' AND date BETWEEN :startDate AND :endDate")
+    suspend fun getTotalExpensesForPeriod(userId: Long, startDate: Date, endDate: Date): Double?
+
+    @Query("SELECT * FROM transactions WHERE userId = :userId AND type = 'Expense' AND date BETWEEN :startDate AND :endDate ORDER BY date ASC")
+    suspend fun getExpensesBetweenDates(userId: Long, startDate: Date, endDate: Date): List<Transaction>
 }

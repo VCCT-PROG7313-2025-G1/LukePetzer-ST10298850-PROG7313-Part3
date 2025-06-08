@@ -53,6 +53,14 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    implementation("androidx.core:core-ktx:1.10.1")  // Add this line
+    implementation("androidx.core:core-ktx:1.10.1")
     implementation("com.github.bumptech.glide:glide:4.14.2")
     kapt("com.github.bumptech.glide:compiler:4.14.2")
+    
+    // MPAndroidChart
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+    implementation ("com.mikhaellopez:circularprogressbar:3.1.0")
+    implementation ("de.hdodenhof:circleimageview:3.1.0")
+
 }

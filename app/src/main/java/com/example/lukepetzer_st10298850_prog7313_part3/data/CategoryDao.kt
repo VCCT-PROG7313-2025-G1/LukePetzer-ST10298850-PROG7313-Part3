@@ -17,6 +17,15 @@ interface CategoryDao {
     @Delete
     suspend fun deleteCategory(category: Category)
 
-    @Query("SELECT SUM(budgetAmount) FROM categories WHERE userId = :userId")
-    suspend fun getTotalBudgetForUser(userId: Long): Double?
+    @Query("SELECT name, budgetAmount FROM categories WHERE userId = :userId")
+    suspend fun getCategoryBudgetsForUser(userId: Long): List<CategoryBudget>
+
+    @Query("SELECT name FROM categories WHERE userId = :userId")
+    suspend fun getAllCategoryNames(userId: Long): List<String>
+
 }
+
+data class CategoryBudget(
+    @ColumnInfo(name = "name") val category: String,
+    @ColumnInfo(name = "budgetAmount") val budgetAmount: Double
+)

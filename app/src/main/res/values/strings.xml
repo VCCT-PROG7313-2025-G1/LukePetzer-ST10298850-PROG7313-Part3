@@ -14,4 +14,24 @@
     <string name="menu_settings">Settings</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="budget_overview">Budget Overview</string>
+    <string name="budget_goals">Budget Goals</string>
+    <string name="set_goals">Set Goals</string>
+    <string name="filter_by">Filter by</string>
+    <string name="search_transactions">Search transactions</string>
+    <string name="total_spending">Total Spending</string>
+    <string name="spending_over_time">Spending Over Time</string>
+    <string name="category_breakdown">Category Breakdown</string>
+    <string name="profile_image_desc">Profile Image</string>
+    <string name="statistics">Statistics</string>
+    <string name="select_date_range">Select Date Range</string>
+    <string name="summary">Summary</string>
+    <string name="summary_placeholder">Summary information will be displayed here.</string>
+    <string name="top_categories">Top Categories</string>
+    <string name="top_categories_description">List of top spending categories</string>
+    <string name="highest_transactions">Highest Transactions</string>
+    <string name="highest_transactions_description">List of highest transactions</string>
+    <string name="budget_goals_progress">Budget Goals Progress</string>
+    <string name="budget_goals_placeholder">Coming soon: Track your progress toward budget goals!</string>
+
 </resources>
