@@ -39,7 +39,7 @@
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:orientation="vertical"
             android:padding="24dp">
 
@@ -47,65 +47,65 @@
                 android:id="@+id/tvLoginTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Login to your account"
-                android:textSize="20sp"
-                android:textColor="#262626"
+                android:layout_marginBottom="24dp"
                 android:fontFamily="sans-serif"
-                android:layout_marginBottom="24dp"/>
+                android:text="Login to your account"
+                android:textColor="#262626"
+                android:textSize="20sp" />
 
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilUsername"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Username"
-                app:boxCornerRadiusTopStart="12dp"
-                app:boxCornerRadiusTopEnd="12dp"
-                app:boxCornerRadiusBottomStart="12dp"
-                app:boxCornerRadiusBottomEnd="12dp"
                 android:layout_marginBottom="16dp"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                android:hint="Username"
+                app:boxCornerRadiusBottomEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusTopStart="12dp">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etUsername"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="text"
                     android:drawableStart="@drawable/ic_person"
-                    android:drawablePadding="8dp"/>
+                    android:drawablePadding="8dp"
+                    android:inputType="text" />
 
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilPassword"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Password"
-                app:boxCornerRadiusTopStart="12dp"
-                app:boxCornerRadiusTopEnd="12dp"
-                app:boxCornerRadiusBottomStart="12dp"
-                app:boxCornerRadiusBottomEnd="12dp"
                 android:layout_marginBottom="24dp"
-                app:passwordToggleEnabled="true"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                android:hint="Password"
+                app:boxCornerRadiusBottomEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusTopStart="12dp"
+                app:passwordToggleEnabled="true">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etPassword"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="textPassword"
                     android:drawableStart="@drawable/ic_lock"
-                    android:drawablePadding="8dp"/>
+                    android:drawablePadding="8dp"
+                    android:inputType="textPassword" />
 
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSignIn"
+                style="@style/Widget.MaterialComponents.Button"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
-                android:text="Sign In"
-                android:textColor="#FFFFFF"
                 android:backgroundTint="#3B82F6"
-                style="@style/Widget.MaterialComponents.Button"/>
+                android:text="Sign In"
+                android:textColor="#FFFFFF" />
 
         </LinearLayout>
 
@@ -115,7 +115,7 @@
         android:id="@+id/tvSignUp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="296dp"
+        android:layout_marginBottom="244dp"
         android:text="Don't have an account? Sign up"
         android:textColor="#525252"
         android:textSize="14sp"
@@ -128,7 +128,7 @@
         android:id="@+id/tvForgotPassword"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="12dp"
+        android:layout_marginBottom="28dp"
         android:text="Forgot your password?"
         android:textColor="#525252"
         android:textSize="14sp"
