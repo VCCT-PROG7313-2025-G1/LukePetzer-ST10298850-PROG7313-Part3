@@ -23,11 +23,13 @@ import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
 import com.example.lukepetzer_st10298850_prog7313_part3.R
 import com.example.lukepetzer_st10298850_prog7313_part3.databinding.FragmentProfileBinding
+import com.example.lukepetzer_st10298850_prog7313_part3.repositories.UserRepository
 import com.mikhaellopez.circularprogressbar.CircularProgressBar
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
@@ -41,6 +43,13 @@ class ProfileFragment : Fragment() {
     private val storage = FirebaseStorage.getInstance()
 
     private var lastKnownStreak = 0
+
+    private lateinit var userRepository: UserRepository
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        userRepository = UserRepository()
+    }
 
     private val getContent = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
@@ -240,23 +249,16 @@ class ProfileFragment : Fragment() {
         val daysBetween = getDaysBetween(lastLoginMillis, currentTime)
 
         val newStreak = when {
-            daysBetween == 0L -> currentStreak
-            daysBetween == 1L -> currentStreak + 1
-            else -> 1
+            daysBetween == 0L -> currentStreak // Same day, keep current streak
+            daysBetween == 1L -> currentStreak + 1 // Next day, increase streak
+            else -> 1 // More than one day passed, reset streak to 1
         }
 
         val updatedLongestStreak = maxOf(longestStreak, newStreak)
 
-        // Update Firestore user document with new streak info
-        val userRef = firestore.collection("users").document(userId)
-        val updates = mapOf(
-            "loginStreak" to newStreak,
-            "lastLoginDate" to Timestamp.now(),
-            "longestStreak" to updatedLongestStreak
-        )
-
+        // Always update the streak, even if it's the first login
         try {
-            userRef.update(updates).await()
+            userRepository.updateLoginStreak(userId, newStreak, currentTime, updatedLongestStreak)
             withContext(Dispatchers.Main) {
                 binding.tvStreakCount.text = "$newStreak Day Streak"
                 binding.tvLongestStreak.text = "Longest streak: $updatedLongestStreak days"
@@ -317,5 +319,21 @@ class ProfileFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    fun updateLoginStreak() {
+        val userId = getUserIdFromSharedPreferences()
+        if (userId != null) {
+            lifecycleScope.launch {
+                try {
+                    val user = userRepository.getUserById(userId)
+                    user?.let {
+                        handleLoginStreak(userId, it.loginStreak, it.longestStreak, it.lastLoginDate)
+                    }
+                } catch (e: Exception) {
+                    Toast.makeText(context, "Failed to update login streak: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
     }
 }

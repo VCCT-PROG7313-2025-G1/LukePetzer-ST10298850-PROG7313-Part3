@@ -16,6 +16,7 @@ import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import androidx.navigation.ui.onNavDestinationSelected
 import com.example.lukepetzer_st10298850_prog7313_part3.databinding.ActivityMainBinding
+import com.example.lukepetzer_st10298850_prog7313_part3.fragments.ProfileFragment
 import com.google.android.material.bottomnavigation.BottomNavigationView
 
 class MainActivity : AppCompatActivity() {
@@ -121,5 +122,14 @@ class MainActivity : AppCompatActivity() {
 
     override fun onSupportNavigateUp(): Boolean {
         return navController.navigateUp() || super.onSupportNavigateUp()
+    }
+
+    fun updateLoginStreak() {
+        val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as? NavHostFragment
+        navHostFragment?.childFragmentManager?.fragments?.forEach { fragment ->
+            if (fragment is ProfileFragment) {
+                fragment.updateLoginStreak()
+            }
+        }
     }
 }

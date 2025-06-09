@@ -159,55 +159,7 @@
             app:cardBackgroundColor="@color/card_background"
             app:cardCornerRadius="16dp"
             app:cardElevation="4dp"
-            android:layout_marginBottom="16dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Your Budgeting Level"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/text_color_primary" />
-
-                <ProgressBar
-                    android:id="@+id/pbGamificationProgress"
-                    style="?android:attr/progressBarStyleHorizontal"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:progressTint="@color/progress_primary" />
-
-                <TextView
-                    android:id="@+id/tvCurrentLevel"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Budget Cadet 🌱"
-                    android:textColor="@color/text_color_primary"
-                    android:layout_marginTop="8dp" />
-
-                <TextView
-                    android:id="@+id/tvNextLevel"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Next level in 5 more budgeted days!"
-                    android:textColor="@color/text_color_secondary"
-                    android:layout_marginTop="4dp" />
-
-                <TextView
-                    android:id="@+id/tvStreak"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Current Streak: 4 Days"
-                    android:textColor="@color/text_color_secondary"
-                    android:layout_marginTop="4dp" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+            android:layout_marginBottom="16dp"/>
 
         <!-- Achievements / Badges Card -->
         <com.google.android.material.card.MaterialCardView
@@ -217,32 +169,7 @@
             app:cardBackgroundColor="@color/card_background"
             app:cardCornerRadius="16dp"
             app:cardElevation="4dp"
-            android:layout_marginBottom="16dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Achievements"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/text_color_primary" />
-
-                <!-- Placeholder or RecyclerView/GridLayout for badges -->
-                <TextView
-                    android:id="@+id/tvAchievementsPlaceholder"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="Achievements and badges will be displayed here"
-                    android:textColor="@color/text_color_secondary" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+            android:layout_marginBottom="16dp"/>
 
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

@@ -11,6 +11,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
+import com.example.lukepetzer_st10298850_prog7313_part3.MainActivity
 import com.example.lukepetzer_st10298850_prog7313_part3.R
 import com.example.lukepetzer_st10298850_prog7313_part3.databinding.FragmentLoginBinding
 import com.example.lukepetzer_st10298850_prog7313_part3.repositories.UserRepository
@@ -119,10 +120,11 @@ class LoginFragment : Fragment() {
     private fun safeNavigateToHome() {
         try {
             Log.d("LoginFragment", "Attempting to navigate to home fragment")
-            findNavController().navigate(R.id.action_loginFragment_to_homeFragment) //, null, NavOptions.Builder()
-//                .setPopUpTo(R.id.loginFragment, false)
-//                .build())
+            findNavController().navigate(R.id.action_loginFragment_to_homeFragment)
             Log.d("LoginFragment", "Navigation to home fragment successful")
+            
+            // Update login streak after successful navigation
+            (activity as? MainActivity)?.updateLoginStreak()
         } catch (e: Exception) {
             Log.e("LoginFragment", "Navigation error: ${e.message}", e)
             Toast.makeText(context, "Navigation error: ${e.message}", Toast.LENGTH_LONG).show()

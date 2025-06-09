@@ -44,12 +44,12 @@ class UserRepository {
     }
 
     // Update login streak
-    suspend fun updateLoginStreak(userId: String, streak: Int, date: Long, longest: Int? = null) {
-        val updates = mutableMapOf<String, Any>(
-            "loginStreak" to streak,
-            "lastLoginDate" to date
+    suspend fun updateLoginStreak(userId: String, newStreak: Int, lastLoginDate: Long, longestStreak: Int) {
+        val updates = mapOf(
+            "loginStreak" to newStreak,
+            "lastLoginDate" to lastLoginDate,
+            "longestStreak" to longestStreak
         )
-        longest?.let { updates["longestStreak"] = it }
         usersCollection.document(userId).update(updates).await()
     }
 
