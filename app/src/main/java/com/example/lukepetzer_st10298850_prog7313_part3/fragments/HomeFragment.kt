@@ -18,6 +18,7 @@ import com.example.lukepetzer_st10298850_prog7313_part3.viewmodels.HomeViewModel
 import com.example.lukepetzer_st10298850_prog7313_part3.viewmodels.HomeViewModelFactory
 import com.example.lukepetzer_st10298850_prog7313_part3.data.CategoryProgress
 import com.example.lukepetzer_st10298850_prog7313_part3.data.Transaction
+import com.example.lukepetzer_st10298850_prog7313_part3.utils.ChartUtils
 import com.example.lukepetzer_st10298850_prog7313_part3.utils.toCurrency
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.BarData
@@ -25,6 +26,8 @@ import com.github.mikephil.charting.data.BarDataSet
 import com.github.mikephil.charting.data.BarEntry
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import com.github.mikephil.charting.utils.ColorTemplate
+import com.google.android.material.datepicker.MaterialDatePicker
+import com.example.lukepetzer_st10298850_prog7313_part3.viewmodels.TimeFrame
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -66,6 +69,50 @@ class HomeFragment : Fragment() {
         bindObservers()
 
         viewModel.loadMonthlySpending(userId)
+
+        setupBarChartClickListener()
+
+        setupTimeFrameFilter()
+    }
+
+    private fun setupTimeFrameFilter() {
+        val timeFrames = arrayOf("Last Day", "Last Week", "Last Month", "Custom")
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, timeFrames)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        binding.spinnerDateFilter.adapter = adapter
+
+        binding.spinnerDateFilter.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                when (position) {
+                    0 -> viewModel.filterTransactionsByTimeFrame(TimeFrame.LAST_DAY)
+                    1 -> viewModel.filterTransactionsByTimeFrame(TimeFrame.LAST_WEEK)
+                    2 -> viewModel.filterTransactionsByTimeFrame(TimeFrame.LAST_MONTH)
+                    3 -> showCustomDateRangePicker()
+                }
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+    }
+
+    private fun showCustomDateRangePicker() {
+        val dateRangePickerDialog = MaterialDatePicker.Builder.dateRangePicker()
+            .setTitleText("Select Date Range")
+            .build()
+
+        dateRangePickerDialog.addOnPositiveButtonClickListener { selection ->
+            val startDate = Date(selection.first)
+            val endDate = Date(selection.second)
+            viewModel.filterTransactionsByTimeFrame(TimeFrame.CUSTOM, startDate, endDate)
+        }
+
+        dateRangePickerDialog.show(parentFragmentManager, "DATE_RANGE_PICKER")
+    }
+
+    private fun setupBarChartClickListener() {
+        binding.barChart.setOnClickListener {
+            viewModel.toggleGoalLines()
+        }
     }
 
     private fun setupUI() {
@@ -123,16 +170,28 @@ class HomeFragment : Fragment() {
                 binding.tvRemainingBudget.text = "${rem.toCurrency()} left to spend today"
             }
 
-            categoryTotals.observe(viewLifecycleOwner) { totals ->
+            filteredCategoryTotals.observe(viewLifecycleOwner) { totals ->
                 if (totals.isNotEmpty()) {
                     updateCategoryBreakdown(totals)
                 } else {
-                    binding.barChart.setNoDataText("No data available")
+                    binding.barChart.setNoDataText("No data available for selected time frame")
+                    binding.barChart.invalidate()
+                }
+            }
+            filteredCategoryTotals.observe(viewLifecycleOwner) { totals ->
+                if (totals.isNotEmpty()) {
+                    updateCategoryBreakdown(totals)
+                } else {
+                    binding.barChart.setNoDataText("No data available for selected time frame")
                     binding.barChart.invalidate()
                 }
             }
 
             categoryProgress.observe(viewLifecycleOwner) { bars -> updateCategoryProgressBars(bars) }
+
+            showGoalLines.observe(viewLifecycleOwner) { showLines ->
+                updateBarChart(showLines)
+            }
         }
     }
 
@@ -160,6 +219,20 @@ class HomeFragment : Fragment() {
             animateY(1000)
             invalidate()
         }
+    }
+
+    private fun updateBarChart(showGoalLines: Boolean) {
+        val categoryTotals = viewModel.categoryTotals.value ?: emptyMap()
+        val shortTermGoal = viewModel.budgetGoal.value?.shortTermGoal
+        val longTermGoal = viewModel.budgetGoal.value?.maxGoal
+
+        ChartUtils.configureBarChart(
+            binding.barChart,
+            categoryTotals,
+            shortTermGoal,
+            longTermGoal,
+            showGoalLines
+        )
     }
 
     private fun updateChartsFromTransactions(transactions: List<Transaction>) {

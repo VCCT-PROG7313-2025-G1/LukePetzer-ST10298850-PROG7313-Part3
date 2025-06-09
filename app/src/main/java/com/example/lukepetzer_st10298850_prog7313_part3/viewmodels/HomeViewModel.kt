@@ -15,6 +15,10 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
+enum class TimeFrame {
+    LAST_DAY, LAST_WEEK, LAST_MONTH, CUSTOM
+}
+
 class HomeViewModel(
     private val transactionRepo: TransactionRepository,
     private val categoryRepo: CategoryRepository,
@@ -54,6 +58,12 @@ class HomeViewModel(
 
     private val _monthlySpending = MutableLiveData<List<Entry>>()
     val monthlySpending: LiveData<List<Entry>> = _monthlySpending
+
+    private val _showGoalLines = MutableLiveData<Boolean>(false)
+    val showGoalLines: LiveData<Boolean> = _showGoalLines
+
+    private val _filteredCategoryTotals = MutableLiveData<Map<String, Double>>()
+    val filteredCategoryTotals: LiveData<Map<String, Double>> = _filteredCategoryTotals
 
     fun setUserId(id: String) {
         _userId.value = id
@@ -196,5 +206,34 @@ class HomeViewModel(
         }
 
         return entries
+    }
+
+    fun toggleGoalLines() {
+        _showGoalLines.value = _showGoalLines.value?.not() ?: true
+    }
+
+    fun filterTransactionsByTimeFrame(timeFrame: TimeFrame, startDate: Date? = null, endDate: Date? = null) {
+        viewModelScope.launch {
+            val userId = _userId.value ?: return@launch
+            val endDate = endDate ?: Date()
+            val startDate = when (timeFrame) {
+                TimeFrame.LAST_DAY -> Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -1) }.time
+                TimeFrame.LAST_WEEK -> Calendar.getInstance().apply { add(Calendar.WEEK_OF_YEAR, -1) }.time
+                TimeFrame.LAST_MONTH -> Calendar.getInstance().apply { add(Calendar.MONTH, -1) }.time
+                TimeFrame.CUSTOM -> startDate ?: return@launch
+            }
+
+            val filteredTransactions = transactionRepo.getTransactionsForUserInDateRange(userId, startDate, endDate)
+            _transactions.value = filteredTransactions  // Update this line
+            updateFilteredCategoryTotals(filteredTransactions)
+            updateCategoryProgress()  // Add this line
+            updateRemainingBudget()   // Add this line
+        }
+    }
+
+    private fun updateFilteredCategoryTotals(transactions: List<Transaction>) {
+        val totals = transactions.groupBy { it.category }
+            .mapValues { (_, transactions) -> transactions.sumOf { it.amount } }
+        _filteredCategoryTotals.value = totals
     }
 }

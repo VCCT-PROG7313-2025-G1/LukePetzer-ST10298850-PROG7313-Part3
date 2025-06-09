@@ -4,14 +4,26 @@ import android.graphics.Color
 import com.github.mikephil.charting.charts.BarChart
 import com.github.mikephil.charting.charts.PieChart
 import com.github.mikephil.charting.components.Legend
+import com.github.mikephil.charting.components.LimitLine
 import com.github.mikephil.charting.components.XAxis
-import com.github.mikephil.charting.data.*
+import com.github.mikephil.charting.data.BarData
+import com.github.mikephil.charting.data.BarDataSet
+import com.github.mikephil.charting.data.BarEntry
+import com.github.mikephil.charting.data.PieData
+import com.github.mikephil.charting.data.PieDataSet
+import com.github.mikephil.charting.data.PieEntry
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import com.github.mikephil.charting.formatter.PercentFormatter
 import com.github.mikephil.charting.utils.ColorTemplate
 
 object ChartUtils {
-    fun configureBarChart(barChart: BarChart, categoryTotals: Map<String, Double>) {
+    fun configureBarChart(
+        barChart: BarChart, 
+        categoryTotals: Map<String, Double>, 
+        shortTermGoal: Double?, 
+        longTermGoal: Double?,
+        showGoalLines: Boolean
+    ) {
         val entries = categoryTotals.entries.mapIndexed { index, (_, total) ->
             BarEntry(index.toFloat(), total.toFloat())
         }
@@ -45,6 +57,30 @@ object ChartUtils {
             axisRight.isEnabled = false
             setDrawGridBackground(false)
             animateY(1000)
+
+            // Add goal lines
+            if (showGoalLines) {
+                val leftAxis = barChart.axisLeft
+                shortTermGoal?.let { goal ->
+                    val shortTermLine = LimitLine(goal.toFloat(), "Short-term Goal")
+                    shortTermLine.lineWidth = 2f
+                    shortTermLine.lineColor = Color.BLACK
+                    shortTermLine.labelPosition = LimitLine.LimitLabelPosition.RIGHT_TOP
+                    shortTermLine.textSize = 10f
+                    leftAxis.addLimitLine(shortTermLine)
+                }
+                longTermGoal?.let { goal ->
+                    val longTermLine = LimitLine(goal.toFloat(), "Long-term Goal")
+                    longTermLine.lineWidth = 2f
+                    longTermLine.lineColor = Color.BLACK
+                    longTermLine.labelPosition = LimitLine.LimitLabelPosition.RIGHT_TOP
+                    longTermLine.textSize = 10f
+                    leftAxis.addLimitLine(longTermLine)
+                }
+            } else {
+                barChart.axisLeft.removeAllLimitLines()
+            }
+
             invalidate()
         }
     }
