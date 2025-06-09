@@ -59,12 +59,27 @@ class MainActivity : AppCompatActivity() {
         val bottomNav: BottomNavigationView = binding.bottomNavView
         bottomNav.setupWithNavController(navController)
 
-        // Hide/show bottom navigation based on destination
+        // Hide/show bottom navigation and adjust toolbar based on destination
         navController.addOnDestinationChangedListener { _, destination, _ ->
             when (destination.id) {
-                R.id.loginFragment, R.id.registerFragment, R.id.profileFragment -> bottomNav.visibility = View.GONE
-                else -> bottomNav.visibility = View.VISIBLE
+                R.id.loginFragment, R.id.registerFragment -> {
+                    bottomNav.visibility = View.GONE
+                    supportActionBar?.hide()
+                }
+                R.id.profileFragment -> {
+                    bottomNav.visibility = View.GONE
+                    supportActionBar?.show()
+                    supportActionBar?.setDisplayHomeAsUpEnabled(true)
+                    supportActionBar?.setDisplayShowHomeEnabled(true)
+                }
+                else -> {
+                    bottomNav.visibility = View.VISIBLE
+                    supportActionBar?.show()
+                    supportActionBar?.setDisplayHomeAsUpEnabled(false)
+                    supportActionBar?.setDisplayShowHomeEnabled(false)
+                }
             }
+            invalidateOptionsMenu()
         }
 
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
@@ -79,14 +94,30 @@ class MainActivity : AppCompatActivity() {
         return true
     }
 
+    override fun onPrepareOptionsMenu(menu: Menu): Boolean {
+        val currentDestination = navController.currentDestination
+        val profileItem = menu.findItem(R.id.profileFragment)
+        profileItem?.isVisible = currentDestination?.id !in listOf(
+            R.id.loginFragment,
+            R.id.registerFragment,
+            R.id.profileFragment
+        )
+        return super.onPrepareOptionsMenu(menu)
+    }
+
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.profileFragment -> {
                 navController.navigate(R.id.profileFragment)
                 true
             }
+            android.R.id.home -> {
+                navController.navigateUp()
+                true
+            }
             else -> super.onOptionsItemSelected(item)
-        }    }
+        }
+    }
 
     override fun onSupportNavigateUp(): Boolean {
         return navController.navigateUp() || super.onSupportNavigateUp()

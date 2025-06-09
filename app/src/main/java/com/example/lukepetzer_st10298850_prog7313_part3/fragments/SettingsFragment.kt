@@ -1,6 +1,8 @@
 package com.example.lukepetzer_st10298850_prog7313_part3.fragments
 
+import android.content.Context
 import android.os.Bundle
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -8,6 +10,7 @@ import android.view.ViewGroup
 import androidx.navigation.fragment.findNavController
 import com.example.lukepetzer_st10298850_prog7313_part3.R
 import com.example.lukepetzer_st10298850_prog7313_part3.databinding.FragmentSettingsBinding
+import com.google.firebase.auth.FirebaseAuth
 
 // TODO: Rename parameter arguments, choose names that match
 // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -27,8 +30,11 @@ class SettingsFragment : Fragment() {
     private var _binding: FragmentSettingsBinding? = null
     private val binding get() = _binding!!
 
+    private lateinit var auth: FirebaseAuth
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        auth = FirebaseAuth.getInstance()
         arguments?.let {
             param1 = it.getString(ARG_PARAM1)
             param2 = it.getString(ARG_PARAM2)
@@ -74,8 +80,18 @@ class SettingsFragment : Fragment() {
     }
 
     private fun signOut() {
-        // TODO: Implement sign out logic here
-        // For example, clear user session, SharedPreferences, etc.
+        // Sign out from Firebase
+        auth.signOut()
+
+        // Clear user session from SharedPreferences
+        val sharedPref = requireActivity().getPreferences(Context.MODE_PRIVATE)
+        with(sharedPref.edit()) {
+            remove("USER_ID")
+            apply()
+        }
+
+        // Show a toast message
+        Toast.makeText(context, "Signed out successfully", Toast.LENGTH_SHORT).show()
 
         // Navigate back to the login page
         findNavController().navigate(R.id.action_settingsFragment_to_loginFragment)

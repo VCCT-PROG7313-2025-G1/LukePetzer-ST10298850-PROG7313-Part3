@@ -8,13 +8,13 @@
 
     <ImageView
         android:id="@+id/ivLogo"
-        android:layout_width="251dp"
-        android:layout_height="229dp"
+        android:layout_width="315dp"
+        android:layout_height="111dp"
+        android:layout_marginTop="16dp"
         android:src="@drawable/sik_logo"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="32dp"/>
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
         android:id="@+id/tvTagline"
@@ -112,27 +112,29 @@
     </androidx.cardview.widget.CardView>
 
     <TextView
-        android:id="@+id/tvForgotPassword"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Forgot your password?"
-        android:textColor="#525252"
-        android:textSize="14sp"
-        app:layout_constraintBottom_toTopOf="@id/tvSignUp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginBottom="16dp"/>
-
-    <TextView
         android:id="@+id/tvSignUp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="296dp"
         android:text="Don't have an account? Sign up"
         android:textColor="#525252"
         android:textSize="14sp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginBottom="16dp"/>
+        app:layout_constraintHorizontal_bias="0.497"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <TextView
+        android:id="@+id/tvForgotPassword"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        android:text="Forgot your password?"
+        android:textColor="#525252"
+        android:textSize="14sp"
+        app:layout_constraintBottom_toTopOf="@id/tvSignUp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.495"
+        app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
