@@ -3,15 +3,18 @@ package com.example.lukepetzer_st10298850_prog7313_part3.viewmodels
 import androidx.lifecycle.*
 import com.example.lukepetzer_st10298850_prog7313_part3.data.Transaction
 import com.example.lukepetzer_st10298850_prog7313_part3.repositories.TransactionRepository
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
 import java.util.*
 
 class TransactionHistoryViewModel(
-    private val transactionRepo: TransactionRepository
+//    private val transactionRepo: TransactionRepository
 ) : ViewModel() {
 
+    private var transactionRepo: TransactionRepository = TransactionRepository(FirebaseFirestore.getInstance())
     private val _transactions = MutableLiveData<List<Transaction>>()
     val transactions: LiveData<List<Transaction>> = _transactions
+
 
     fun loadTransactions(userId: String, startDate: Date, endDate: Date) {
         viewModelScope.launch {

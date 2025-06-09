@@ -42,7 +42,7 @@ class BudgetFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        viewModel = ViewModelProvider(this)[TransactionHistoryViewModel::class.java]
+        viewModel = ViewModelProvider(requireActivity())[TransactionHistoryViewModel::class.java]
 
         setupRecyclerView()
         setupFilterSpinner()
