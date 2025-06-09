@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "247488443713",
+    "firebase_url": "https://sik-personal-budget-app-d78c9-default-rtdb.firebaseio.com",
+    "project_id": "sik-personal-budget-app-d78c9",
+    "storage_bucket": "sik-personal-budget-app-d78c9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:247488443713:android:9cd199811014f5466d9dc0",
+        "android_client_info": {
+          "package_name": "com.example.lukepetzer_st10298850_prog7313_part3"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBEKrCzwtO3HorcPX8ClA_Qnjf3Iu_3ZH8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
