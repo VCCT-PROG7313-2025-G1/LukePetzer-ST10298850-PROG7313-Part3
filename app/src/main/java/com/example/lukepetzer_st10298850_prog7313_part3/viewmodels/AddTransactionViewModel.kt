@@ -1,5 +1,7 @@
 package com.example.lukepetzer_st10298850_prog7313_part3.viewmodels
 
+import android.content.Context
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -14,10 +16,12 @@ class AddTransactionViewModel : ViewModel() {
     private val _categories = MutableLiveData<List<String>>()
     val categories: LiveData<List<String>> = _categories
 
-    fun loadCategories() {
-        val userId = auth.currentUser?.uid ?: return
-        db.collection("users").document(userId)
-            .collection("categories")
+    fun loadCategories(activity: FragmentActivity) {
+        val sharedPref = activity.getPreferences(Context.MODE_PRIVATE)
+        val userId = sharedPref.getString("USER_ID", "")
+
+        db.collection("categories")
+            .whereEqualTo("userId", userId)
             .get()
             .addOnSuccessListener { result ->
                 val categoryList = result.mapNotNull { it.getString("name") }

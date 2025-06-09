@@ -6,7 +6,7 @@ data class Transaction(
     val type: String = "", // "Income" or "Expense"
     val amount: Double = 0.0,
     val category: String = "",
-    val date: Long = 0L, // Store date as timestamp (milliseconds since epoch)
+    var date: Long = 0L, // Store date as timestamp (milliseconds since epoch)
     val description: String? = null,
     val receiptUri: String? = null // Store URI or Firebase Storage download URL
 )

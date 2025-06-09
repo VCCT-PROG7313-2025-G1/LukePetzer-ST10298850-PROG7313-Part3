@@ -41,9 +41,10 @@ class StatsFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         val sharedPref = requireActivity().getPreferences(Context.MODE_PRIVATE)
-        val userId = sharedPref.getLong("USER_ID", -1)
+        val userId = sharedPref.getString("USER_ID", "")
 
-        if (userId != -1L) {
+
+        if (userId != "" || userId == null) {
             viewModel.monthlySummary.observe(viewLifecycleOwner) { summary ->
                 binding.tvTotalIncome.text = formatCurrency(summary.income)
                 binding.tvTotalExpenses.text = formatCurrency(summary.expenses)

@@ -36,6 +36,8 @@ class AddTransactionFragment : Fragment() {
     private val db = FirebaseFirestore.getInstance()
     private val storage = FirebaseStorage.getInstance()
 
+    private var date: Date = Date()
+
     private val cameraLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             receiptUri?.let {
@@ -74,7 +76,7 @@ class AddTransactionFragment : Fragment() {
         val dateStr = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date())
         binding.etDate.setText(dateStr)
 
-        viewModel.loadCategories()
+        viewModel.loadCategories(this.requireActivity())
     }
 
     private fun openDatePicker() {
@@ -82,6 +84,7 @@ class AddTransactionFragment : Fragment() {
         DatePickerDialog(requireContext(), { _, y, m, d ->
             val selected = Calendar.getInstance()
             selected.set(y, m, d)
+            date = selected.time
             binding.etDate.setText(SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(selected.time))
         }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show()
     }
@@ -114,7 +117,9 @@ class AddTransactionFragment : Fragment() {
         val type = if (binding.toggleGroup.checkedButtonId == binding.btnIncome.id) "Income" else "Expense"
         val dateText = binding.etDate.text.toString()
         val description = binding.etDescription.text.toString().takeIf { it.isNotBlank() }
-        val userId = auth.currentUser?.uid ?: return
+//        val userId = auth.currentUser?.uid ?: return
+        val sharedPref = requireActivity().getPreferences(Context.MODE_PRIVATE)
+        val userId = sharedPref.getString("USER_ID", "")
 
         if (amount == null || category.isNullOrBlank()) {
             Toast.makeText(context, "Enter valid amount and select category", Toast.LENGTH_SHORT).show()
@@ -125,9 +130,9 @@ class AddTransactionFragment : Fragment() {
             "amount" to amount,
             "category" to category,
             "type" to type,
-            "date" to dateText,
-            "description" to description,
-            "timestamp" to System.currentTimeMillis()
+            "date" to date.toInstant().toEpochMilli(),
+            "description" to description
+//            "timestamp" to System.currentTimeMillis()
         )
 
         if (receiptUri != null) {
@@ -138,12 +143,12 @@ class AddTransactionFragment : Fragment() {
                     receiptRef.downloadUrl
                 }.addOnSuccessListener { downloadUri ->
                     transaction["receiptUrl"] = downloadUri.toString()
-                    saveTransaction(userId, transaction)
+                    saveTransaction(userId.toString(), transaction)
                 }.addOnFailureListener {
                     Toast.makeText(context, "Failed to upload receipt", Toast.LENGTH_SHORT).show()
                 }
         } else {
-            saveTransaction(userId, transaction)
+            saveTransaction(userId.toString(), transaction)
         }
     }
 

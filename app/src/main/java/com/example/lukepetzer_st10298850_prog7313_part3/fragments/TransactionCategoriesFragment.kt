@@ -67,13 +67,15 @@ class TransactionCategoriesFragment : Fragment() {
         setupListeners()
 
         // Get current user ID from Firebase Auth
-        val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
-        if (currentUserId == null) {
+//        val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
+        val sharedPref = requireActivity().getPreferences(Context.MODE_PRIVATE)
+        val userId = sharedPref.getString("USER_ID", "")
+        if (userId == "" || userId == null) {
             findNavController().navigate(R.id.action_transactionCategoriesFragment_to_loginFragment)
             return
         }
 
-        viewModel.loadCategories(currentUserId)
+        viewModel.loadCategories(userId)
     }
 
     private fun setupRecyclerView() {
@@ -117,12 +119,15 @@ class TransactionCategoriesFragment : Fragment() {
         dialogBinding.btnSaveChanges.setOnClickListener {
             val categoryName = dialogBinding.etCategoryName.text.toString()
             val budgetAmount = dialogBinding.etBudgetAmount.text.toString().toDoubleOrNull()
-            val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
 
-            if (categoryName.isNotEmpty() && budgetAmount != null && currentUserId != null) {
+            val sharedPref = requireActivity().getPreferences(Context.MODE_PRIVATE)
+            val userId = sharedPref.getString("USER_ID", "")
+//            val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
+
+            if (categoryName.isNotEmpty() && budgetAmount != null && userId != null) {
                 val newCategory = Category(
                     name = categoryName,
-                    userId = currentUserId,
+                    userId = userId,
                     budgetAmount = budgetAmount
                 )
                 viewModel.addCategory(newCategory)

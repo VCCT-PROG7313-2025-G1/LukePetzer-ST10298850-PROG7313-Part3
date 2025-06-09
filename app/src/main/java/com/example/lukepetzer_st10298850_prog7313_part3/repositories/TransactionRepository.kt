@@ -26,12 +26,15 @@ class TransactionRepository(private val db: FirebaseFirestore) {
     }
 
     suspend fun getTransactionsForUser(userId: String): List<Transaction> {
-        val snapshot = transactionsRef
-            .whereEqualTo("userId", userId)
+        val snapshot = db.collection("users").document(userId).collection("transactions")
             .orderBy("date", Query.Direction.DESCENDING)
             .get()
             .await()
-        return snapshot.toObjects(Transaction::class.java)
+        return snapshot.documents.mapNotNull {
+            it.toObject(Transaction::class.java)
+//            .apply {
+//            this?.date = it.getLong("date")!!
+         }
     }
 
     suspend fun getTransactionsForUserInDateRange(userId: String, startDate: Date, endDate: Date): List<Transaction> {
