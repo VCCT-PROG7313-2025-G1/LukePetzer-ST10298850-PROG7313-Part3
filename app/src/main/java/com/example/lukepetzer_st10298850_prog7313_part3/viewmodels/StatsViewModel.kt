@@ -1,26 +1,23 @@
 package com.example.lukepetzer_st10298850_prog7313_part3.viewmodels
 
 import android.app.Application
+import android.content.Context
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.viewModelScope
-import com.example.lukepetzer_st10298850_prog7313_part3.data.AppDatabase
-import com.example.lukepetzer_st10298850_prog7313_part3.repositories.MonthlySummary
-import com.example.lukepetzer_st10298850_prog7313_part3.repositories.TransactionRepository
-import kotlinx.coroutines.launch
-import android.content.Context
 import com.example.lukepetzer_st10298850_prog7313_part3.data.Transaction
+import com.example.lukepetzer_st10298850_prog7313_part3.data.MonthlySummary
 import com.github.mikephil.charting.data.Entry
-import com.github.mikephil.charting.data.PieEntry
+import com.google.firebase.firestore.FirebaseFirestore
 import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Date
-import java.util.Locale
-import android.util.Log
+import java.util.*
+import kotlin.math.min
 
 class StatsViewModel(application: Application) : AndroidViewModel(application) {
-    private val repository: TransactionRepository
+
+    private val db = FirebaseFirestore.getInstance()
+
     private val _monthlySummary = MutableLiveData<MonthlySummary>()
     val monthlySummary: LiveData<MonthlySummary> = _monthlySummary
 
@@ -30,23 +27,42 @@ class StatsViewModel(application: Application) : AndroidViewModel(application) {
     private val _monthlySpending = MutableLiveData<List<Entry>>()
     val monthlySpending: LiveData<List<Entry>> = _monthlySpending
 
-    init {
-        val database = AppDatabase.getDatabase(application)
-        repository = TransactionRepository(database.transactionDao())
+    // Fetch and calculate monthly summary
+    fun loadMonthlySummary(userId: String) {
+        val start = Calendar.getInstance().apply { set(Calendar.DAY_OF_MONTH, 1) }.time
+        val end = Date()
+
+        db.collection("transactions")
+            .whereEqualTo("userId", userId)
+            .whereGreaterThanOrEqualTo("date", start)
+            .whereLessThanOrEqualTo("date", end)
+            .get()
+            .addOnSuccessListener { result ->
+                var income = 0.0
+                var expenses = 0.0
+                for (doc in result) {
+                    val amount = doc.getDouble("amount") ?: 0.0
+                    val type = doc.getString("type") ?: "expense"
+                    if (type == "income") income += amount else expenses += amount
+                }
+
+                val remaining = income - expenses  // Calculate the remaining amount
+
+                _monthlySummary.value = MonthlySummary(income = income, expenses = expenses, remaining = remaining)
+            }
+            .addOnFailureListener {
+                Log.e("StatsViewModel", "Error fetching summary", it)
+            }
     }
 
-    fun loadMonthlySummary(userId: Long) {
-        viewModelScope.launch {
-            _monthlySummary.value = repository.getMonthlySummary(userId)
-        }
-    }
+    // Fetch budget usage stats
+    fun loadBudgetUsage(userId: String) {
+        loadMonthlySummary(userId)
 
-    fun loadBudgetUsage(userId: Long) {
-        viewModelScope.launch {
-            val monthlySummary = repository.getMonthlySummary(userId)
+        monthlySummary.observeForever { summary ->
             val totalBudget = getMonthlyBudget(getApplication())
-            val expenses = monthlySummary.expenses
-            val percentUsed = (expenses / totalBudget * 100).coerceAtMost(100.0)
+            val expenses = summary.expenses
+            val percentUsed = min((expenses / totalBudget) * 100.0, 100.0)
             val remaining = totalBudget - expenses
 
             _budgetUsage.value = BudgetUsage(
@@ -60,19 +76,41 @@ class StatsViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun getMonthlyBudget(context: Context): Double {
         val prefs = context.getSharedPreferences("budget_prefs", Context.MODE_PRIVATE)
-        return prefs.getFloat("monthly_budget", 5000f).toDouble() // Default: R5000
+        return prefs.getFloat("monthly_budget", 5000f).toDouble()
     }
 
-    fun loadMonthlySpending(userId: Long) {
-        viewModelScope.launch {
-            val calendar = Calendar.getInstance()
-            calendar.set(Calendar.DAY_OF_MONTH, 1)
-            val startDate = calendar.time
-            val endDate = Date()
+    // Load spending over time (for chart)
+    fun loadMonthlySpending(userId: String) {
+        val calendar = Calendar.getInstance()
+        calendar.set(Calendar.DAY_OF_MONTH, 1)
+        val startDate = calendar.time
+        val endDate = Date()
 
-            val expenses = repository.getExpensesBetweenDates(userId, startDate, endDate)
-            _monthlySpending.value = getSpendingEntriesByDate(expenses)
-        }
+        db.collection("transactions")
+            .whereEqualTo("userId", userId)
+            .whereGreaterThanOrEqualTo("date", startDate)
+            .whereLessThanOrEqualTo("date", endDate)
+            .whereEqualTo("type", "expense")
+            .get()
+            .addOnSuccessListener { result ->
+                val expenses = result.mapNotNull { doc ->
+                    val amount = doc.getDouble("amount") ?: return@mapNotNull null
+                    val date = doc.getDate("date") ?: return@mapNotNull null
+                    Transaction(
+                        id = doc.id,
+                        userId = userId,
+                        amount = amount,
+                        date = date.time, // Convert Date to Long timestamp
+                        type = "expense",
+                        category = doc.getString("category") ?: ""
+                    )
+                }
+
+                _monthlySpending.value = getSpendingEntriesByDate(expenses)
+            }
+            .addOnFailureListener {
+                Log.e("StatsViewModel", "Failed to fetch expenses", it)
+            }
     }
 
     private fun getSpendingEntriesByDate(expenses: List<Transaction>): List<Entry> {
@@ -85,17 +123,15 @@ class StatsViewModel(application: Application) : AndroidViewModel(application) {
         }.timeInMillis
 
         for ((dateString, expensesOnDate) in groupedByDate.toSortedMap()) {
-            val date = dateFormat.parse(dateString)
-            val x = ((date.time - startOfMonth) / (1000 * 60 * 60 * 24)).toFloat() // Days since start
+            val date = dateFormat.parse(dateString) ?: continue
+            val x = ((date.time - startOfMonth) / (1000 * 60 * 60 * 24)).toFloat()
             val total = expensesOnDate.sumOf { it.amount }
             entries.add(Entry(x, total.toFloat()))
         }
 
-        // Debug logging
+        // Debug logs
         Log.d("LineChart", "Entries count: ${entries.size}")
-        entries.forEach {
-            Log.d("LineChart", "x=${it.x}, y=${it.y}")
-        }
+        entries.forEach { Log.d("LineChart", "x=${it.x}, y=${it.y}") }
 
         return entries
     }

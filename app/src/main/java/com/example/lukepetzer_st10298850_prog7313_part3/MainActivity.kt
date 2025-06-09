@@ -1,6 +1,7 @@
 package com.example.lukepetzer_st10298850_prog7313_part3
 
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.view.Menu
 import android.view.MenuItem
@@ -33,9 +34,14 @@ class MainActivity : AppCompatActivity() {
         setSupportActionBar(binding.toolbar)
 
         // Set up the NavHostFragment
-        val navHostFragment = supportFragmentManager
-            .findFragmentById(R.id.nav_host_fragment) as NavHostFragment
-        navController = navHostFragment.navController
+        val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as? NavHostFragment
+        navHostFragment?.let {
+            navController = it.navController
+            Log.d("MainActivity", "NavController initialized successfully")
+        } ?: run {
+            Log.e("MainActivity", "NavHostFragment not found")
+            finish()
+        }
 
         // Set up the ActionBar with the NavController
         appBarConfiguration = AppBarConfiguration(

@@ -9,7 +9,6 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.example.lukepetzer_st10298850_prog7313_part3.R
-import com.example.lukepetzer_st10298850_prog7313_part3.data.AppDatabase
 import com.example.lukepetzer_st10298850_prog7313_part3.data.User
 import com.example.lukepetzer_st10298850_prog7313_part3.databinding.FragmentRegisterBinding
 import com.example.lukepetzer_st10298850_prog7313_part3.repositories.UserRepository
@@ -28,8 +27,7 @@ class RegisterFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val database = AppDatabase.getDatabase(requireContext())
-        userRepository = UserRepository(database.userDao())
+        userRepository = UserRepository()
 
         binding.btnRegister.setOnClickListener {
             val name = binding.etName.text.toString()
@@ -39,13 +37,20 @@ class RegisterFragment : Fragment() {
 
             if (name.isNotEmpty() && username.isNotEmpty() && email.isNotEmpty() && password.isNotEmpty()) {
                 lifecycleScope.launch {
-                    val newUser = User(username = username, email = email, password = password, name = name)
-                    val userId = userRepository.registerUser(newUser)
-                    if (userId > 0) {
+                    val newUser = com.example.lukepetzer_st10298850_prog7313_part3.data.User(
+                        username = username,
+                        email = email,
+                        password = password,
+                        name = name
+                    )
+
+                    val success = userRepository.registerUser(newUser)
+
+                    if (success) {
                         Toast.makeText(context, "Registration successful", Toast.LENGTH_SHORT).show()
                         findNavController().navigate(R.id.action_registerFragment_to_loginFragment)
                     } else {
-                        Toast.makeText(context, "Registration failed", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Username already exists", Toast.LENGTH_SHORT).show()
                     }
                 }
             } else {

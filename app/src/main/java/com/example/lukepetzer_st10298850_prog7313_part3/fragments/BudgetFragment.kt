@@ -32,7 +32,7 @@ class BudgetFragment : Fragment() {
     private val binding get() = _binding!!
     private lateinit var viewModel: TransactionHistoryViewModel
     private lateinit var transactionAdapter: TransactionAdapter
-    private var userId: Long = -1
+    private var userId: String = ""
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentBudgetBinding.inflate(inflater, container, false)
@@ -49,8 +49,8 @@ class BudgetFragment : Fragment() {
         observeTransactions()
 
         val sharedPref = requireActivity().getPreferences(Context.MODE_PRIVATE)
-        userId = sharedPref.getLong("USER_ID", -1)
-        if (userId != -1L) {
+        userId = sharedPref.getString("USER_ID", "") ?: ""
+        if (userId.isNotEmpty()) {
             viewModel.loadAllTransactions(userId)
         }
     }

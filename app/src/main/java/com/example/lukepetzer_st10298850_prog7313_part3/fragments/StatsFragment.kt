@@ -60,9 +60,9 @@ class StatsFragment : Fragment() {
                 setupLineChart(entries)
             }
 
-            viewModel.loadMonthlySummary(userId)
-            viewModel.loadBudgetUsage(userId)
-            viewModel.loadMonthlySpending(userId)
+            viewModel.loadMonthlySummary(userId.toString())
+            viewModel.loadBudgetUsage(userId.toString())
+            viewModel.loadMonthlySpending(userId.toString())
         }
     }
 

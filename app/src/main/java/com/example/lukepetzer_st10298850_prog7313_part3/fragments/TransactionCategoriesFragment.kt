@@ -8,17 +8,19 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.lukepetzer_st10298850_prog7313_part3.R
-import com.example.lukepetzer_st10298850_prog7313_part3.data.AppDatabase
 import com.example.lukepetzer_st10298850_prog7313_part3.data.Category
 import com.example.lukepetzer_st10298850_prog7313_part3.databinding.DialogAddCategoryBinding
 import com.example.lukepetzer_st10298850_prog7313_part3.databinding.FragmentTransactionCategoriesBinding
 import com.example.lukepetzer_st10298850_prog7313_part3.databinding.ItemCategoryBinding
 import com.example.lukepetzer_st10298850_prog7313_part3.repositories.CategoryRepository
+import com.example.lukepetzer_st10298850_prog7313_part3.viewmodels.TransactionCategoriesViewModel
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 
 // TODO: Rename parameter arguments, choose names that match
@@ -38,10 +40,8 @@ class TransactionCategoriesFragment : Fragment() {
 
     private var _binding: FragmentTransactionCategoriesBinding? = null
     private val binding get() = _binding!!
-    private lateinit var categoryRepository: CategoryRepository
-    private var currentUserId: Long = -1 // Default to an invalid ID
+    private val viewModel: TransactionCategoriesViewModel by viewModels()
     private lateinit var categoryAdapter: CategoryAdapter
-    private val categories = mutableListOf<Category>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -62,44 +62,36 @@ class TransactionCategoriesFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val database = AppDatabase.getDatabase(requireContext())
-        categoryRepository = CategoryRepository(database.categoryDao())
+        setupRecyclerView()
+        setupObservers()
+        setupListeners()
 
-        // Retrieve the user ID from SharedPreferences
-        val sharedPref = requireActivity().getPreferences(Context.MODE_PRIVATE)
-        currentUserId = sharedPref.getLong("USER_ID", -1)
-
-        if (currentUserId == -1L) {
-            // No user is logged in, handle this case (e.g., navigate to login screen)
+        // Get current user ID from Firebase Auth
+        val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
+        if (currentUserId == null) {
             findNavController().navigate(R.id.action_transactionCategoriesFragment_to_loginFragment)
             return
         }
 
-        setupRecyclerView()
-        loadCategories()
-        setupUI()
-        setupListeners()
+        viewModel.loadCategories(currentUserId)
     }
 
     private fun setupRecyclerView() {
-        categoryAdapter = CategoryAdapter(categories)
+        categoryAdapter = CategoryAdapter(emptyList())
         binding.rvCategories.apply {
             layoutManager = LinearLayoutManager(context)
             adapter = categoryAdapter
         }
     }
 
-    private fun loadCategories() {
-        lifecycleScope.launch {
-            val loadedCategories = categoryRepository.getCategoriesForUser(currentUserId)
-            categories.clear()
-            categories.addAll(loadedCategories)
-            categoryAdapter.notifyDataSetChanged()
-            updateTotalBudget()
+    private fun setupObservers() {
+        viewModel.categories.observe(viewLifecycleOwner) { categories ->
+            categoryAdapter.updateCategories(categories)
+            updateTotalBudget(categories)
         }
     }
 
-    private fun updateTotalBudget() {
+    private fun updateTotalBudget(categories: List<Category>) {
         val totalBudget = categories.sumOf { it.budgetAmount }
         binding.tvTotalBudgetAmount.text = String.format("R%.2f", totalBudget)
     }
@@ -125,22 +117,15 @@ class TransactionCategoriesFragment : Fragment() {
         dialogBinding.btnSaveChanges.setOnClickListener {
             val categoryName = dialogBinding.etCategoryName.text.toString()
             val budgetAmount = dialogBinding.etBudgetAmount.text.toString().toDoubleOrNull()
+            val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
 
-            if (categoryName.isNotEmpty() && budgetAmount != null) {
-                lifecycleScope.launch {
-                    val newCategory = Category(
-                        name = categoryName,
-                        userId = currentUserId,
-                        budgetAmount = budgetAmount
-                    )
-                    val categoryId = categoryRepository.addCategory(newCategory)
-                    if (categoryId > 0) {
-                        Toast.makeText(context, "Category added successfully", Toast.LENGTH_SHORT).show()
-                        loadCategories() // Reload categories to update the UI
-                    } else {
-                        Toast.makeText(context, "Failed to add category", Toast.LENGTH_SHORT).show()
-                    }
-                }
+            if (categoryName.isNotEmpty() && budgetAmount != null && currentUserId != null) {
+                val newCategory = Category(
+                    name = categoryName,
+                    userId = currentUserId,
+                    budgetAmount = budgetAmount
+                )
+                viewModel.addCategory(newCategory)
                 dialog.dismiss()
             } else {
                 Toast.makeText(context, "Please fill in all fields", Toast.LENGTH_SHORT).show()
@@ -155,8 +140,13 @@ class TransactionCategoriesFragment : Fragment() {
         _binding = null
     }
 
-    inner class CategoryAdapter(private val categories: List<Category>) :
+    inner class CategoryAdapter(private var categories: List<Category>) :
         RecyclerView.Adapter<CategoryAdapter.CategoryViewHolder>() {
+
+        fun updateCategories(newCategories: List<Category>) {
+            categories = newCategories
+            notifyDataSetChanged()
+        }
 
         inner class CategoryViewHolder(private val binding: ItemCategoryBinding) :
             RecyclerView.ViewHolder(binding.root) {

@@ -3,21 +3,25 @@ package com.example.lukepetzer_st10298850_prog7313_part3.fragments
 import android.app.DatePickerDialog
 import android.content.Context
 import android.os.Bundle
+import android.util.Log
 import android.view.*
 import android.widget.*
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
+import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import androidx.appcompat.app.AlertDialog
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import com.example.lukepetzer_st10298850_prog7313_part3.R
-import com.example.lukepetzer_st10298850_prog7313_part3.data.AppDatabase
+import com.example.lukepetzer_st10298850_prog7313_part3.databinding.FragmentHomeBinding
+import com.example.lukepetzer_st10298850_prog7313_part3.repositories.*
+import com.example.lukepetzer_st10298850_prog7313_part3.viewmodels.HomeViewModel
+import com.example.lukepetzer_st10298850_prog7313_part3.viewmodels.HomeViewModelFactory
 import com.example.lukepetzer_st10298850_prog7313_part3.data.CategoryProgress
 import com.example.lukepetzer_st10298850_prog7313_part3.data.Transaction
-import com.example.lukepetzer_st10298850_prog7313_part3.databinding.FragmentHomeBinding
 import com.example.lukepetzer_st10298850_prog7313_part3.utils.ChartUtils
 import com.example.lukepetzer_st10298850_prog7313_part3.utils.toCurrency
-import com.example.lukepetzer_st10298850_prog7313_part3.viewmodels.HomeViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -26,18 +30,10 @@ class HomeFragment : Fragment() {
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
 
-    private val viewModel: HomeViewModel by viewModels {
-        HomeViewModel.Factory(
-            AppDatabase.getDatabase(requireContext()).transactionDao(),
-            AppDatabase.getDatabase(requireContext()).categoryDao(),
-            AppDatabase.getDatabase(requireContext()).budgetGoalDao()
-        )
-    }
+    private lateinit var viewModel: HomeViewModel
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+//        _binding = inflater.inflate(R.layout.fragment_home, container, false)
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
         return binding.root
     }
@@ -45,64 +41,87 @@ class HomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val userId = getUserId()
-        viewModel.loadUserData(userId)
-        viewModel.loadBudgetGoal(userId)
+        // Initialize Firebase-backed repositories
+        val transactionRepo = TransactionRepository(FirebaseFirestore.getInstance())
+        val categoryRepo = CategoryRepository()
+        val budgetGoalRepo = BudgetGoalRepository(FirebaseFirestore.getInstance())
+
+        // Use ViewModel Factory to enable DI
+        val factory = HomeViewModelFactory(transactionRepo, categoryRepo, budgetGoalRepo)
+        viewModel = ViewModelProvider(this, factory)[HomeViewModel::class.java]
+
+        // Check authenticated user
+        val userId = getUserSession()
+        if (userId.isNullOrEmpty()) {
+            findNavController().navigate(R.id.action_global_to_login)
+            return
+        }
+
+        // Load initial data
+        viewModel.setUserId(userId)
+
         setupDateFilterSpinner()
         setupUI()
         bindObservers()
     }
 
     private fun setupUI() {
-        binding.currentDateText.text = viewModel.getCurrentDateFormatted()
-        binding.setGoalsButton.setOnClickListener {
-            showSetGoalsDialog()
-        }
-        // setupSearchView()
+        binding.currentDateText.text = SimpleDateFormat("MMMM d, yyyy", Locale.getDefault()).format(Date())
+        binding.setGoalsButton.setOnClickListener { showSetGoalsDialog() }
     }
 
     private fun bindObservers() {
-        with(viewModel) {
-            totalSpending.observe(viewLifecycleOwner) {
-                binding.tvTotalSpending.text = it.toCurrency()
-            }
-            remainingBudget.observe(viewLifecycleOwner) {
-                binding.tvRemainingBudget.text = "${it.toCurrency()} left to spend today"
-            }
-            budgetGoals.observe(viewLifecycleOwner) { (assigned, remaining) ->
-                val progress = if (assigned + remaining > 0) (assigned / (assigned + remaining) * 100).toInt() else 0
-                binding.progressBudgetGoals.progress = progress
-                binding.tvBudgetGoalsDetails.text = "${assigned.toCurrency()} assigned / ${remaining.toCurrency()} remaining"
-            }
-            categoryTotals.observe(viewLifecycleOwner) {
-                updateCharts(it)
-            }
-            categoryProgress.observe(viewLifecycleOwner) {
-                updateCategoryProgressBars(it)
-            }
-            transactions.observe(viewLifecycleOwner) {
+        viewModel.apply {
+            transactions.observe(viewLifecycleOwner) { tx ->
                 updateDateRangeDisplay()
-                updateChartsFromTransactions(it)
+                updateChartsFromTransactions(tx)
+                val total = tx.sumOf { it.amount }
+                binding.tvTotalSpending.text = total.toCurrency()
             }
-            categories.observe(viewLifecycleOwner) { categoryList ->
-                val categories = listOf("All Categories") + categoryList
-                val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, categories)
-                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-                binding.spinnerCategory.adapter = adapter
 
+            categories.observe(viewLifecycleOwner) { cats ->
+                val list = listOf("All Categories") + cats.map { it.name }
+                ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, list).also { adapter ->
+                    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                    binding.spinnerCategory.adapter = adapter
+                }
                 binding.spinnerCategory.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                    override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                        val selected = if (position == 0) null else categories[position]
-                        viewModel.setCategory(selected)
+                    override fun onItemSelected(parent: AdapterView<*>?, view: View?, pos: Int, id: Long) {
+                        setCategory(if (pos == 0) null else list[pos])
                     }
                     override fun onNothingSelected(parent: AdapterView<*>?) {}
                 }
             }
-            budgetGoalData.observe(viewLifecycleOwner) { goal ->
+
+            budgetGoal.observe(viewLifecycleOwner) { goal ->
                 goal?.let {
-                    binding.tvBudgetGoalsDetails.text = "Short: ${it.shortTermGoal.toCurrency()}, Max: ${it.maxGoal.toCurrency()}"
+                    val assigned = it.shortTermGoal
+                    val remaining = it.maxGoal - assigned
+                    val total = it.maxGoal
+                    val progress = if (total > 0) ((assigned / total) * 100).toInt() else 0
+                    binding.progressBudgetGoals.progress = progress
+                    binding.tvBudgetGoalsDetails.text = "${assigned.toCurrency()} assigned / ${remaining.toCurrency()} remaining"
+                } ?: run {
+                    binding.progressBudgetGoals.progress = 0
+                    binding.tvBudgetGoalsDetails.text = "No budget goal set"
                 }
             }
+
+            remainingBudget.observe(viewLifecycleOwner) { rem ->
+                binding.tvRemainingBudget.text = "${rem.toCurrency()} left to spend today"
+            }
+
+            categoryTotals.observe(viewLifecycleOwner) { totals ->
+                if (totals.isNotEmpty()) {
+                    updateCharts(totals)
+                } else {
+                    // Handle empty totals
+                    binding.pieChart.setNoDataText("No data available")
+                    binding.pieChart.invalidate()
+                }
+            }
+
+            categoryProgress.observe(viewLifecycleOwner) { bars -> updateCategoryProgressBars(bars) }
         }
     }
 
@@ -111,8 +130,7 @@ class HomeFragment : Fragment() {
     }
 
     private fun updateChartsFromTransactions(transactions: List<Transaction>) {
-        val totals = transactions.groupBy { it.category }
-            .mapValues { it.value.sumOf { txn -> txn.amount } }
+        val totals = transactions.groupBy { it.category }.mapValues { it.value.sumOf { txn -> txn.amount } }
         updateCharts(totals)
     }
 
@@ -122,127 +140,83 @@ class HomeFragment : Fragment() {
             val view = layoutInflater.inflate(R.layout.item_category_progress, binding.categoryProgressContainer, false)
             view.findViewById<TextView>(R.id.tvCategoryName).text = item.category
             view.findViewById<TextView>(R.id.tvAmount).text = item.spent.toCurrency()
-            val progressBar = view.findViewById<ProgressBar>(R.id.progressBar)
-            progressBar.progress = item.progress
-            progressBar.progressDrawable.setColorFilter(getProgressColor(item.progress), android.graphics.PorterDuff.Mode.SRC_IN)
+            val pb = view.findViewById<ProgressBar>(R.id.progressBar)
+            pb.progress = item.progress
+            pb.progressDrawable.setColorFilter(getProgressColor(item.progress), android.graphics.PorterDuff.Mode.SRC_IN)
             binding.categoryProgressContainer.addView(view)
         }
     }
 
-    private fun getProgressColor(progress: Int): Int {
-        return when {
-            progress < 50 -> ContextCompat.getColor(requireContext(), R.color.progress_green)
-            progress < 80 -> ContextCompat.getColor(requireContext(), R.color.progress_yellow)
-            else -> ContextCompat.getColor(requireContext(), R.color.progress_red)
-        }
+    private fun getProgressColor(p: Int): Int = when {
+        p < 50 -> ContextCompat.getColor(requireContext(), R.color.progress_green)
+        p < 80 -> ContextCompat.getColor(requireContext(), R.color.progress_yellow)
+        else -> ContextCompat.getColor(requireContext(), R.color.progress_red)
     }
 
     private fun updateDateRangeDisplay() {
-        val text = when (viewModel.getCurrentDateFilter()) {
+        binding.tvDateRange.text = when (viewModel.currentFilter) {
             HomeViewModel.DateFilter.DAILY -> "Today"
             HomeViewModel.DateFilter.WEEKLY -> "This Week"
             HomeViewModel.DateFilter.MONTHLY -> "This Month"
-            HomeViewModel.DateFilter.CUSTOM -> {
-                val format = SimpleDateFormat("dd MMM", Locale.getDefault())
-                val start = viewModel.getCustomStartDate()?.let { format.format(it) } ?: ""
-                val end = viewModel.getCustomEndDate()?.let { format.format(it) } ?: ""
-                "$start – $end"
-            }
+            HomeViewModel.DateFilter.CUSTOM -> viewModel.customRangeFormatted()
         }
-        binding.tvDateRange.text = text
     }
 
     private fun setupDateFilterSpinner() {
-        val options = listOf("Daily", "Weekly", "Monthly", "Custom")
-        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, options)
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        binding.spinnerDateFilter.adapter = adapter
-
+        val opts = listOf("Daily", "Weekly", "Monthly", "Custom")
+        ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, opts).also {
+            it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            binding.spinnerDateFilter.adapter = it
+        }
         binding.spinnerDateFilter.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                when (position) {
-                    0 -> {
-                        viewModel.setDateFilter(HomeViewModel.DateFilter.DAILY)
-                        updateDateRangeDisplay()
-                    }
-                    1 -> {
-                        viewModel.setDateFilter(HomeViewModel.DateFilter.WEEKLY)
-                        updateDateRangeDisplay()
-                    }
-                    2 -> {
-                        viewModel.setDateFilter(HomeViewModel.DateFilter.MONTHLY)
-                        updateDateRangeDisplay()
-                    }
-                    3 -> {
-                        showCustomDatePickerDialog()
-                    }
-                }
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, pos: Int, id: Long) {
+                if (pos == 3) return showCustomDatePickerDialog()
+                viewModel.setDateFilter(HomeViewModel.DateFilter.values()[pos])
+                updateDateRangeDisplay()
             }
-
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
     }
 
     private fun showCustomDatePickerDialog() {
-        val calendar = Calendar.getInstance()
-        val (year, month, day) = arrayOf(
-            calendar.get(Calendar.YEAR),
-            calendar.get(Calendar.MONTH),
-            calendar.get(Calendar.DAY_OF_MONTH)
-        )
-
-        DatePickerDialog(requireContext(), { _, startYear, startMonth, startDay ->
-            val start = Calendar.getInstance().apply { set(startYear, startMonth, startDay) }
-
-            DatePickerDialog(requireContext(), { _, endYear, endMonth, endDay ->
-                val end = Calendar.getInstance().apply { set(endYear, endMonth, endDay) }
-                viewModel.setCustomDateRange(start.time, end.time)
+        val cal = Calendar.getInstance()
+        DatePickerDialog(requireContext(), { _, y, m, d ->
+            val start = Calendar.getInstance().apply { set(y, m, d) }.time
+            DatePickerDialog(requireContext(), { _, y2, m2, d2 ->
+                viewModel.setCustomDateRange(start, Calendar.getInstance().apply { set(y2, m2, d2) }.time)
                 updateDateRangeDisplay()
-            }, year, month, day).apply {
-                datePicker.minDate = start.timeInMillis
-            }.show()
-        }, year, month, day).show()
+            }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH))
+                .apply { datePicker.minDate = start.time }.show()
+        }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show()
     }
 
     private fun showSetGoalsDialog() {
-        val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_set_goals, null)
-        val shortTermInput = dialogView.findViewById<EditText>(R.id.etShortTermGoal)
-        val maxGoalInput = dialogView.findViewById<EditText>(R.id.etMaxGoal)
-
+        val dialog = layoutInflater.inflate(R.layout.dialog_set_goals, null)
+        val shortInput = dialog.findViewById<EditText>(R.id.etShortTermGoal)
+        val maxInput = dialog.findViewById<EditText>(R.id.etMaxGoal)
         AlertDialog.Builder(requireContext())
-            .setTitle("Set Budget Goals")
-            .setView(dialogView)
+            .setTitle("Set Goals")
+            .setView(dialog)
             .setPositiveButton("Save") { _, _ ->
-                val shortTerm = shortTermInput.text.toString().toDoubleOrNull() ?: 0.0
-                val maxGoal = maxGoalInput.text.toString().toDoubleOrNull() ?: 0.0
-                viewModel.saveBudgetGoal(getUserId(), shortTerm, maxGoal)
+                viewModel.saveBudgetGoal(
+                    FirebaseAuth.getInstance().currentUser?.uid ?: "",
+                    shortInput.text.toString().toDoubleOrNull() ?: 0.0,
+                    maxInput.text.toString().toDoubleOrNull() ?: 0.0
+                )
             }
             .setNegativeButton("Cancel", null)
             .show()
     }
 
-    // Uncomment and implement if you want to add search functionality
-    // private fun setupSearchView() {
-    //     binding.searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-    //         override fun onQueryTextSubmit(query: String?): Boolean {
-    //             query?.let { viewModel.searchTransactions(it) }
-    //             return true
-    //         }
-    //
-    //         override fun onQueryTextChange(newText: String?): Boolean {
-    //             // Optional: Live search
-    //             return true
-    //         }
-    //     })
-    // }
-
-    private fun getUserId(): Long {
-        val sharedPref = requireActivity().getPreferences(Context.MODE_PRIVATE)
-        return sharedPref.getLong("USER_ID", -1)
-    }
-
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    private fun getUserSession(): String? {
+        val sharedPref = requireActivity().getPreferences(Context.MODE_PRIVATE)
+        val userId = sharedPref.getString("USER_ID", null)
+        Log.d("LoginFragment", "Retrieved user session: $userId")
+        return if (userId.isNullOrEmpty()) null else userId
     }
 }

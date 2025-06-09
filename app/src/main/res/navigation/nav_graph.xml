@@ -9,13 +9,16 @@
         android:id="@+id/loginFragment"
         android:name="com.example.lukepetzer_st10298850_prog7313_part3.fragments.LoginFragment"
         android:label="Login"
-        tools:layout="@layout/fragment_login">
+        tools:layout="@layout/fragment_login"
+        app:launchSingleTop="true">
         <action
             android:id="@+id/action_loginFragment_to_registerFragment"
             app:destination="@id/registerFragment" />
         <action
-            android:id="@+id/action_loginFragment_to_navigation_home"
-            app:destination="@id/navigation_home" />
+            android:id="@+id/action_loginFragment_to_homeFragment"
+            app:destination="@id/homeFragment"
+            app:popUpTo="@id/nav_graph"
+            app:popUpToInclusive="true" />
     </fragment>
 
     <fragment
@@ -29,11 +32,15 @@
     </fragment>
 
     <fragment
-        android:id="@+id/navigation_home"
+        android:id="@+id/homeFragment"
         android:name="com.example.lukepetzer_st10298850_prog7313_part3.fragments.HomeFragment"
         android:label="Home"
         tools:layout="@layout/fragment_home">
-        <!-- Removed the action to setGoalsFragment -->
+        <action
+            android:id="@+id/action_homeFragment_to_loginFragment"
+            app:destination="@id/loginFragment"
+            app:popUpTo="@id/loginFragment"
+            app:popUpToInclusive="true" />
     </fragment>
 
     <fragment
@@ -54,7 +61,7 @@
             app:popUpToInclusive="true" />
         <action
             android:id="@+id/action_addTransactionFragment_to_homeFragment"
-            app:destination="@id/navigation_home"
+            app:destination="@id/homeFragment"
             app:popUpTo="@id/navigation_add"
             app:popUpToInclusive="true" />
     </fragment>
@@ -102,5 +109,12 @@
     <action
         android:id="@+id/action_global_profileFragment"
         app:destination="@id/profileFragment" />
+
+    <!-- Global action to navigate to the login fragment from anywhere -->
+    <action
+        android:id="@+id/action_global_to_login"
+        app:destination="@id/loginFragment"
+        app:popUpTo="@id/loginFragment"
+        app:popUpToInclusive="true" />
 
 </navigation>

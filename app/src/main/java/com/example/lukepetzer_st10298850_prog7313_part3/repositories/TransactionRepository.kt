@@ -1,43 +1,124 @@
 package com.example.lukepetzer_st10298850_prog7313_part3.repositories
 
+import com.example.lukepetzer_st10298850_prog7313_part3.data.MonthlySummary
 import com.example.lukepetzer_st10298850_prog7313_part3.data.Transaction
-import com.example.lukepetzer_st10298850_prog7313_part3.data.TransactionDao
-import java.util.Calendar
-import java.util.Date
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
+import kotlinx.coroutines.tasks.await
+import java.util.*
 
-class TransactionRepository(private val transactionDao: TransactionDao) {
+class TransactionRepository(private val db: FirebaseFirestore) {
+
+    private val transactionsRef = db.collection("transactions")
 
     suspend fun insertTransaction(transaction: Transaction) {
-        transactionDao.insertTransaction(transaction)
+        val docRef = transactionsRef.document()
+        transaction.id = docRef.id
+        docRef.set(transaction).await()
     }
 
     suspend fun getAllTransactions(): List<Transaction> {
-        return transactionDao.getAllTransactions()
+        val snapshot = transactionsRef
+            .orderBy("date", Query.Direction.DESCENDING)
+            .get()
+            .await()
+        return snapshot.toObjects(Transaction::class.java)
     }
 
-    suspend fun getMonthlySummary(userId: Long): MonthlySummary {
-        val currentDate = Date()
-        val startOfMonth = getStartOfMonth(currentDate)
-        val endOfMonth = getEndOfMonth(currentDate)
-
-        val income = transactionDao.getTotalIncomeForPeriod(userId, startOfMonth, endOfMonth) ?: 0.0
-        val expenses = transactionDao.getTotalExpensesForPeriod(userId, startOfMonth, endOfMonth) ?: 0.0
-        val remaining = income - expenses
-
-        return MonthlySummary(income, expenses, remaining)
+    suspend fun getTransactionsForUser(userId: String): List<Transaction> {
+        val snapshot = transactionsRef
+            .whereEqualTo("userId", userId)
+            .orderBy("date", Query.Direction.DESCENDING)
+            .get()
+            .await()
+        return snapshot.toObjects(Transaction::class.java)
     }
 
-    suspend fun getWeeklySpending(userId: Long): List<Transaction> {
+    suspend fun getTransactionsForUserInDateRange(userId: String, startDate: Date, endDate: Date): List<Transaction> {
+        val snapshot = transactionsRef
+            .whereEqualTo("userId", userId)
+            .whereGreaterThanOrEqualTo("date", startDate.time)
+            .whereLessThanOrEqualTo("date", endDate.time)
+            .orderBy("date", Query.Direction.DESCENDING)
+            .get()
+            .await()
+        return snapshot.toObjects(Transaction::class.java)
+    }
+
+    suspend fun getTransactionsByCategoryInDateRange(userId: String, category: String, startDate: Date, endDate: Date): List<Transaction> {
+        val snapshot = transactionsRef
+            .whereEqualTo("userId", userId)
+            .whereEqualTo("category", category)
+            .whereGreaterThanOrEqualTo("date", startDate.time)
+            .whereLessThanOrEqualTo("date", endDate.time)
+            .orderBy("date", Query.Direction.DESCENDING)
+            .get()
+            .await()
+        return snapshot.toObjects(Transaction::class.java)
+    }
+
+    suspend fun searchTransactionsByDescription(userId: String, keyword: String): List<Transaction> {
+        val snapshot = transactionsRef
+            .whereEqualTo("userId", userId)
+            .get()
+            .await()
+
+        return snapshot.toObjects(Transaction::class.java).filter {
+            it.description?.contains(keyword, ignoreCase = true) == true
+        }
+    }
+
+    suspend fun getTotalIncomeForPeriod(userId: String, startDate: Date, endDate: Date): Double {
+        val snapshot = transactionsRef
+            .whereEqualTo("userId", userId)
+            .whereEqualTo("type", "Income")
+            .whereGreaterThanOrEqualTo("date", startDate.time)
+            .whereLessThanOrEqualTo("date", endDate.time)
+            .get()
+            .await()
+
+        return snapshot.toObjects(Transaction::class.java).sumOf { it.amount }
+    }
+
+    suspend fun getTotalExpensesForPeriod(userId: String, startDate: Date, endDate: Date): Double {
+        val snapshot = transactionsRef
+            .whereEqualTo("userId", userId)
+            .whereEqualTo("type", "Expense")
+            .whereGreaterThanOrEqualTo("date", startDate.time)
+            .whereLessThanOrEqualTo("date", endDate.time)
+            .get()
+            .await()
+
+        return snapshot.toObjects(Transaction::class.java).sumOf { it.amount }
+    }
+
+    suspend fun getWeeklySpending(userId: String): List<Transaction> {
         val endDate = Date()
         val startDate = Calendar.getInstance().apply {
             time = endDate
             add(Calendar.DAY_OF_YEAR, -7)
         }.time
-        return transactionDao.getExpensesBetweenDates(userId, startDate, endDate)
+
+        val snapshot = transactionsRef
+            .whereEqualTo("userId", userId)
+            .whereEqualTo("type", "Expense")
+            .whereGreaterThanOrEqualTo("date", startDate.time)
+            .whereLessThanOrEqualTo("date", endDate.time)
+            .orderBy("date", Query.Direction.ASCENDING)
+            .get()
+            .await()
+
+        return snapshot.toObjects(Transaction::class.java)
     }
 
-    suspend fun getExpensesBetweenDates(userId: Long, startDate: Date, endDate: Date): List<Transaction> {
-        return transactionDao.getExpensesBetweenDates(userId, startDate, endDate)
+    suspend fun getMonthlySummary(userId: String): MonthlySummary {
+        val currentDate = Date()
+        val startOfMonth = getStartOfMonth(currentDate)
+        val endOfMonth = getEndOfMonth(currentDate)
+
+        val income = getTotalIncomeForPeriod(userId, startOfMonth, endOfMonth)
+        val expenses = getTotalExpensesForPeriod(userId, startOfMonth, endOfMonth)
+        return MonthlySummary(income, expenses, income - expenses)
     }
 
     private fun getStartOfMonth(date: Date): Date {

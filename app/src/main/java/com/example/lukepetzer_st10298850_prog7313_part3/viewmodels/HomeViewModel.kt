@@ -3,261 +3,188 @@ package com.example.lukepetzer_st10298850_prog7313_part3.viewmodels
 import android.util.Log
 import androidx.lifecycle.*
 import com.example.lukepetzer_st10298850_prog7313_part3.data.BudgetGoal
-import com.example.lukepetzer_st10298850_prog7313_part3.data.BudgetGoalDao
-import com.example.lukepetzer_st10298850_prog7313_part3.data.CategoryDao
+import com.example.lukepetzer_st10298850_prog7313_part3.data.Category
+import com.example.lukepetzer_st10298850_prog7313_part3.data.CategoryProgress
 import com.example.lukepetzer_st10298850_prog7313_part3.data.Transaction
-import com.example.lukepetzer_st10298850_prog7313_part3.data.TransactionDao
+import com.example.lukepetzer_st10298850_prog7313_part3.repositories.BudgetGoalRepository
+import com.example.lukepetzer_st10298850_prog7313_part3.repositories.CategoryRepository
+import com.example.lukepetzer_st10298850_prog7313_part3.repositories.TransactionRepository
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
-import com.example.lukepetzer_st10298850_prog7313_part3.data.CategoryProgress
 
 class HomeViewModel(
-    private val transactionDao: TransactionDao,
-    private val categoryDao: CategoryDao,
-    private val budgetGoalDao: BudgetGoalDao
+    private val transactionRepo: TransactionRepository,
+    private val categoryRepo: CategoryRepository,
+    private val budgetGoalRepo: BudgetGoalRepository
 ) : ViewModel() {
 
-    private val _totalSpending = MutableLiveData<Double>()
-    val totalSpending: LiveData<Double> = _totalSpending
-
-    private val _remainingBudget = MutableLiveData<Double>()
-    val remainingBudget: LiveData<Double> = _remainingBudget
-
-    private val _budgetGoals = MutableLiveData<Pair<Double, Double>>()
-    val budgetGoals: LiveData<Pair<Double, Double>> = _budgetGoals
+    private val _userId = MutableLiveData<String>()
+    val userId: LiveData<String> = _userId
 
     private val _transactions = MutableLiveData<List<Transaction>>()
     val transactions: LiveData<List<Transaction>> = _transactions
 
-    private val _categoryTotals = MutableLiveData<Map<String, Double>>()
-    val categoryTotals: LiveData<Map<String, Double>> = _categoryTotals
+    private val _categories = MutableLiveData<List<Category>>()
+    val categories: LiveData<List<Category>> = _categories
+
+    private val _budgetGoal = MutableLiveData<BudgetGoal?>()
+    val budgetGoal: LiveData<BudgetGoal?> = _budgetGoal
+
+    private val _remainingBudget = MutableLiveData<Double>()
+    val remainingBudget: LiveData<Double> = _remainingBudget
 
     private val _categoryProgress = MutableLiveData<List<CategoryProgress>>()
     val categoryProgress: LiveData<List<CategoryProgress>> = _categoryProgress
 
-    private val _totalBudget = MutableLiveData<Double>()
-    val totalBudget: LiveData<Double> = _totalBudget
+    private val _selectedCategory = MutableLiveData<String?>()
+    val selectedCategory: LiveData<String?> = _selectedCategory
 
-    private val _categories = MutableLiveData<List<String>>()
-    val categories: LiveData<List<String>> = _categories
+    val categoryTotals: LiveData<Map<String, Double>> = _transactions.map { txList ->
+        txList.groupBy { it.category }
+            .mapValues { (_, transactions) -> transactions.sumOf { it.amount } }
+    }
 
-    private val _budgetGoalData = MutableLiveData<BudgetGoal?>()
-    val budgetGoalData: LiveData<BudgetGoal?> = _budgetGoalData
-
-    private var currentUserId: Long = -1
-    private var currentDateFilter = DateFilter.MONTHLY
-        private set
-
+    var currentFilter = DateFilter.DAILY
     private var customStartDate: Date? = null
     private var customEndDate: Date? = null
 
-    private var selectedCategory: String? = null
-
-    fun loadUserData(userId: Long) {
-        currentUserId = userId
-        Log.d("HomeViewModel", "Loading user data for userId: $userId")
-        viewModelScope.launch {
-            loadCategories()
-            updateBudgetGoals()
-            updateTransactions()
-            loadBudgetGoal(userId)
-        }
+    fun setUserId(id: String) {
+        _userId.value = id
+        loadAllData()
     }
 
     fun setDateFilter(filter: DateFilter) {
-        currentDateFilter = filter
-        if (filter != DateFilter.CUSTOM) {
-            customStartDate = null
-            customEndDate = null
-        }
-        updateTransactions()
+        currentFilter = filter
+        loadTransactions()
     }
 
-    fun setCustomDateRange(startDate: Date, endDate: Date) {
-        customStartDate = startDate
-        customEndDate = endDate
-        currentDateFilter = DateFilter.CUSTOM
-        updateTransactions()
+    fun setCustomDateRange(start: Date, end: Date) {
+        customStartDate = start
+        customEndDate = end
+        currentFilter = DateFilter.CUSTOM
+        loadTransactions()
     }
 
     fun setCategory(category: String?) {
-        selectedCategory = category
-        updateTransactions()
+        _selectedCategory.value = category
+        loadTransactions()
     }
 
-    private fun updateTransactions() {
+    private fun loadAllData() {
+        loadTransactions()
+        loadCategories()
+        loadBudgetGoal()
+    }
+
+    private fun loadTransactions() {
         viewModelScope.launch {
-            val (startDate, endDate) = getDateRange()
-            Log.d("HomeViewModel", "Fetching transactions from $startDate to $endDate")
-            val transactions = if (selectedCategory != null && selectedCategory != "All Categories") {
-                transactionDao.getTransactionsForUserByCategoryInDateRange(currentUserId, selectedCategory!!, startDate, endDate)
+            val userId = _userId.value ?: return@launch
+            val transactions = when (currentFilter) {
+                DateFilter.DAILY -> {
+                    val today = Calendar.getInstance().apply {
+                        set(Calendar.HOUR_OF_DAY, 0)
+                        set(Calendar.MINUTE, 0)
+                        set(Calendar.SECOND, 0)
+                        set(Calendar.MILLISECOND, 0)
+                    }.time
+                    transactionRepo.getTransactionsForUserInDateRange(userId, today, Date())
+                }
+                DateFilter.WEEKLY -> {
+                    val weekStart = Calendar.getInstance().apply {
+                        add(Calendar.DAY_OF_YEAR, -7)
+                        set(Calendar.HOUR_OF_DAY, 0)
+                        set(Calendar.MINUTE, 0)
+                        set(Calendar.SECOND, 0)
+                        set(Calendar.MILLISECOND, 0)
+                    }.time
+                    transactionRepo.getTransactionsForUserInDateRange(userId, weekStart, Date())
+                }
+                DateFilter.MONTHLY -> {
+                    val monthStart = Calendar.getInstance().apply {
+                        set(Calendar.DAY_OF_MONTH, 1)
+                        set(Calendar.HOUR_OF_DAY, 0)
+                        set(Calendar.MINUTE, 0)
+                        set(Calendar.SECOND, 0)
+                        set(Calendar.MILLISECOND, 0)
+                    }.time
+                    transactionRepo.getTransactionsForUserInDateRange(userId, monthStart, Date())
+                }
+                DateFilter.CUSTOM -> {
+                    val start = customStartDate ?: return@launch
+                    val end = customEndDate ?: return@launch
+                    transactionRepo.getTransactionsForUserInDateRange(userId, start, end)
+                }
+            }
+            _transactions.value = transactions.filter { _selectedCategory.value == null || it.category == _selectedCategory.value }
+            updateCategoryProgress()
+            updateRemainingBudget()
+        }
+    }
+
+    private fun loadCategories() {
+        viewModelScope.launch {
+            val userId = _userId.value ?: return@launch
+            _categories.value = categoryRepo.getCategoriesForUser(userId)
+        }
+    }
+
+    private fun loadBudgetGoal() {
+        viewModelScope.launch {
+            try {
+                val userId = _userId.value ?: return@launch
+                _budgetGoal.value = budgetGoalRepo.getGoalsForUser(userId)
+                updateRemainingBudget()
+            } catch (e: Exception) {
+                // Log the error and potentially notify the user
+                Log.e("HomeViewModel", "Error loading budget goal", e)
+                // You might want to set _budgetGoal.value to null here if an error occurs
+                // _budgetGoal.value = null
+            }
+        }
+    }
+
+    private fun updateCategoryProgress() {
+        val transactions = _transactions.value ?: return
+        val categories = _categories.value ?: return
+        val progress = categories.map { category ->
+            val spent = transactions.filter { it.category == category.name }.sumOf { it.amount }
+            val progressPercentage = if (category.budgetAmount > 0) {
+                (spent / category.budgetAmount * 100).toInt()
             } else {
-                transactionDao.getTransactionsForUserInDateRange(currentUserId, startDate, endDate)
+                0
             }
-            Log.d("HomeViewModel", "Fetched ${transactions.size} transactions")
-            _transactions.value = transactions
-            updateTotalSpending(transactions)
-            updateCategoryTotals(transactions)
-            updateCategoryProgress(transactions)
+            CategoryProgress(
+                category = category.name,
+                spent = spent,
+                total = category.budgetAmount,
+                progress = progressPercentage
+            )
         }
+        _categoryProgress.value = progress
     }
 
-    private fun updateTotalSpending(transactions: List<Transaction>) {
-        val total = transactions.sumOf { it.amount }
-        _totalSpending.value = total
-        updateRemainingBudget(total)
+    private fun updateRemainingBudget() {
+        val goal = _budgetGoal.value ?: return
+        val spent = _transactions.value?.sumOf { it.amount } ?: 0.0
+        _remainingBudget.value = goal.maxGoal - spent
     }
 
-    private fun updateRemainingBudget(totalSpending: Double) {
+    fun saveBudgetGoal(userId: String, shortTerm: Double, max: Double) {
         viewModelScope.launch {
-            val categoryBudgets = categoryDao.getCategoryBudgetsForUser(currentUserId)
-            val totalBudget = categoryBudgets.sumOf { it.budgetAmount }
-            _totalBudget.value = totalBudget
-            _remainingBudget.value = totalBudget - totalSpending
+            val goal = BudgetGoal(userId, shortTerm, max)
+            budgetGoalRepo.insertOrUpdateGoal(goal)
+            _budgetGoal.value = goal
+            updateRemainingBudget()
         }
     }
 
-    private fun updateBudgetGoals() {
-        viewModelScope.launch {
-            val categoryBudgets = categoryDao.getCategoryBudgetsForUser(currentUserId)
-            val totalBudget = categoryBudgets.sumOf { it.budgetAmount }
-            val totalSpending = _totalSpending.value ?: 0.0
-            _budgetGoals.value = Pair(totalSpending, totalBudget - totalSpending)
-        }
-    }
-
-    private fun updateCategoryTotals(transactions: List<Transaction>) {
-        val totals = transactions.groupBy { it.category }
-            .mapValues { (_, transactions) -> transactions.sumOf { it.amount } }
-        _categoryTotals.value = totals
-        Log.d("HomeViewModel", "Category totals updated: $totals")
-    }
-
-    private fun updateCategoryProgress(transactions: List<Transaction>) {
-        viewModelScope.launch {
-            val categoryBudgets = categoryDao.getCategoryBudgetsForUser(currentUserId)
-            val categorySpending = transactions.groupBy { it.category }
-                .mapValues { (_, transactions) -> transactions.sumOf { it.amount } }
-
-            val progress = categoryBudgets.map { categoryBudget ->
-                val spent = categorySpending[categoryBudget.category] ?: 0.0
-                val progressPercentage = ((spent / categoryBudget.budgetAmount) * 100).toInt().coerceIn(0, 100)
-                CategoryProgress(
-                    category = categoryBudget.category,
-                    spent = spent,
-                    total = categoryBudget.budgetAmount,
-                    progress = progressPercentage
-                )
-            }
-
-            _categoryProgress.value = progress
-            Log.d("HomeViewModel", "Category progress updated: $progress")
-        }
-    }
-
-    private fun getDateRange(): Pair<Date, Date> {
-        val calendar = Calendar.getInstance()
-        val endDate = calendar.time
-        calendar.set(Calendar.HOUR_OF_DAY, 23)
-        calendar.set(Calendar.MINUTE, 59)
-        calendar.set(Calendar.SECOND, 59)
-
-        val startDate = when (currentDateFilter) {
-            DateFilter.DAILY -> {
-                calendar.add(Calendar.DAY_OF_YEAR, -1)
-                calendar.set(Calendar.HOUR_OF_DAY, 0)
-                calendar.set(Calendar.MINUTE, 0)
-                calendar.set(Calendar.SECOND, 0)
-                calendar.time
-            }
-            DateFilter.WEEKLY -> {
-                calendar.add(Calendar.WEEK_OF_YEAR, -1)
-                calendar.set(Calendar.HOUR_OF_DAY, 0)
-                calendar.set(Calendar.MINUTE, 0)
-                calendar.set(Calendar.SECOND, 0)
-                calendar.time
-            }
-            DateFilter.MONTHLY -> {
-                calendar.add(Calendar.MONTH, -1)
-                calendar.set(Calendar.HOUR_OF_DAY, 0)
-                calendar.set(Calendar.MINUTE, 0)
-                calendar.set(Calendar.SECOND, 0)
-                calendar.time
-            }
-            DateFilter.CUSTOM -> customStartDate ?: calendar.time
-        }
-
-        return Pair(startDate, customEndDate ?: endDate)
-    }
-
-    fun searchTransactions(keyword: String) {
-        viewModelScope.launch {
-            val transactions = transactionDao.searchTransactionsByDescription(currentUserId, keyword)
-            _transactions.value = transactions
-            updateTotalSpending(transactions)
-            updateCategoryTotals(transactions)
-            updateCategoryProgress(transactions)
-        }
-    }
-
-    fun getCurrentDateFormatted(): String {
-        val dateFormat = SimpleDateFormat("MMMM d, yyyy", Locale.getDefault())
-        return dateFormat.format(Date())
-    }
-
-    fun getCurrentDateFilter(): DateFilter = currentDateFilter
-    fun getCustomStartDate(): Date? = customStartDate
-    fun getCustomEndDate(): Date? = customEndDate
-
-    fun getCategories(): List<String> {
-        return categories.value ?: emptyList()
-    }
-
-    fun loadCategories() {
-        viewModelScope.launch {
-            val userCategories = categoryDao.getAllCategoryNames(currentUserId)
-            val allCategories = listOf("All Categories") + userCategories
-            _categories.value = allCategories
-            Log.d("HomeViewModel", "Categories loaded: $allCategories")
-        }
-    }
-
-    fun loadBudgetGoal(userId: Long) {
-        viewModelScope.launch {
-            _budgetGoalData.value = budgetGoalDao.getGoalsForUser(userId)
-        }
-    }
-
-    fun saveBudgetGoal(userId: Long, shortTerm: Double, maxGoal: Double) {
-        viewModelScope.launch {
-            budgetGoalDao.insertOrUpdateGoal(BudgetGoal(userId, shortTerm, maxGoal))
-            loadBudgetGoal(userId)
-        }
+    fun customRangeFormatted(): String {
+        val dateFormat = SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
+        return "${dateFormat.format(customStartDate)} - ${dateFormat.format(customEndDate)}"
     }
 
     enum class DateFilter {
         DAILY, WEEKLY, MONTHLY, CUSTOM
     }
-
-    class Factory(
-        private val transactionDao: TransactionDao,
-        private val categoryDao: CategoryDao,
-        private val budgetGoalDao: BudgetGoalDao
-    ) : ViewModelProvider.Factory {
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(HomeViewModel::class.java)) {
-                @Suppress("UNCHECKED_CAST")
-                return HomeViewModel(transactionDao, categoryDao, budgetGoalDao) as T
-            }
-            throw IllegalArgumentException("Unknown ViewModel class")
-        }
-    }
 }
-
-data class CategoryProgress(
-    val category: String,
-    val spent: Double,
-    val total: Double,
-    val progress: Int
-)
