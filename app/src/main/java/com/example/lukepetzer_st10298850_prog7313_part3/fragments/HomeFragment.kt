@@ -1,6 +1,5 @@
 package com.example.lukepetzer_st10298850_prog7313_part3.fragments
 
-import android.app.DatePickerDialog
 import android.content.Context
 import android.os.Bundle
 import android.util.Log
@@ -11,7 +10,6 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import androidx.appcompat.app.AlertDialog
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.example.lukepetzer_st10298850_prog7313_part3.R
 import com.example.lukepetzer_st10298850_prog7313_part3.databinding.FragmentHomeBinding
@@ -20,8 +18,13 @@ import com.example.lukepetzer_st10298850_prog7313_part3.viewmodels.HomeViewModel
 import com.example.lukepetzer_st10298850_prog7313_part3.viewmodels.HomeViewModelFactory
 import com.example.lukepetzer_st10298850_prog7313_part3.data.CategoryProgress
 import com.example.lukepetzer_st10298850_prog7313_part3.data.Transaction
-import com.example.lukepetzer_st10298850_prog7313_part3.utils.ChartUtils
 import com.example.lukepetzer_st10298850_prog7313_part3.utils.toCurrency
+import com.github.mikephil.charting.components.XAxis
+import com.github.mikephil.charting.data.BarData
+import com.github.mikephil.charting.data.BarDataSet
+import com.github.mikephil.charting.data.BarEntry
+import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
+import com.github.mikephil.charting.utils.ColorTemplate
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -33,7 +36,6 @@ class HomeFragment : Fragment() {
     private lateinit var viewModel: HomeViewModel
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-//        _binding = inflater.inflate(R.layout.fragment_home, container, false)
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
         return binding.root
     }
@@ -60,9 +62,10 @@ class HomeFragment : Fragment() {
         // Load initial data
         viewModel.setUserId(userId)
 
-        setupDateFilterSpinner()
         setupUI()
         bindObservers()
+
+        viewModel.loadMonthlySpending(userId)
     }
 
     private fun setupUI() {
@@ -73,10 +76,11 @@ class HomeFragment : Fragment() {
     private fun bindObservers() {
         viewModel.apply {
             transactions.observe(viewLifecycleOwner) { tx ->
-                updateDateRangeDisplay()
                 updateChartsFromTransactions(tx)
-                val total = tx.sumOf { it.amount }
-                binding.tvTotalSpending.text = total.toCurrency()
+            }
+
+            monthlyExpenses.observe(viewLifecycleOwner) { expense ->
+                binding.tvTotalSpending.text = expense.toCurrency()
             }
 
             categories.observe(viewLifecycleOwner) { cats ->
@@ -95,15 +99,23 @@ class HomeFragment : Fragment() {
 
             budgetGoal.observe(viewLifecycleOwner) { goal ->
                 goal?.let {
-                    val assigned = it.shortTermGoal
-                    val remaining = it.maxGoal - assigned
+                    val shortTermAssigned = it.shortTermGoal
+                    val longTermAssigned = it.maxGoal
                     val total = it.maxGoal
-                    val progress = if (total > 0) ((assigned / total) * 100).toInt() else 0
-                    binding.progressBudgetGoals.progress = progress
-                    binding.tvBudgetGoalsDetails.text = "${assigned.toCurrency()} assigned / ${remaining.toCurrency()} remaining"
+
+                    val shortTermProgress = if (total > 0) ((shortTermAssigned / total) * 100).toInt() else 0
+                    binding.progressShortTermGoal.progress = shortTermProgress
+
+                    val longTermProgress = if (total > 0) ((longTermAssigned / total) * 100).toInt() else 0
+                    binding.progressLongTermGoal.progress = longTermProgress
+
+                    binding.tvShortTermGoalDetails.text = "Short-Term: ${shortTermAssigned.toCurrency()}"
+                    binding.tvLongTermGoalDetails.text = "Long-Term: ${longTermAssigned.toCurrency()}"
                 } ?: run {
-                    binding.progressBudgetGoals.progress = 0
-                    binding.tvBudgetGoalsDetails.text = "No budget goal set"
+                    binding.progressShortTermGoal.progress = 0
+                    binding.progressLongTermGoal.progress = 0
+                    binding.tvShortTermGoalDetails.text = ""
+                    binding.tvLongTermGoalDetails.text = ""
                 }
             }
 
@@ -113,11 +125,10 @@ class HomeFragment : Fragment() {
 
             categoryTotals.observe(viewLifecycleOwner) { totals ->
                 if (totals.isNotEmpty()) {
-                    updateCharts(totals)
+                    updateCategoryBreakdown(totals)
                 } else {
-                    // Handle empty totals
-                    binding.pieChart.setNoDataText("No data available")
-                    binding.pieChart.invalidate()
+                    binding.barChart.setNoDataText("No data available")
+                    binding.barChart.invalidate()
                 }
             }
 
@@ -125,13 +136,35 @@ class HomeFragment : Fragment() {
         }
     }
 
-    private fun updateCharts(categoryTotals: Map<String, Double>) {
-        ChartUtils.configurePieChart(binding.pieChart, categoryTotals)
+    private fun updateCategoryBreakdown(breakdown: Map<String, Double>) {
+        val entries = breakdown.entries.mapIndexed { index, (category, amount) ->
+            BarEntry(index.toFloat(), amount.toFloat())
+        }
+
+        val dataSet = BarDataSet(entries, "Category Breakdown")
+        dataSet.colors = ColorTemplate.MATERIAL_COLORS.toList()
+
+        val barData = BarData(dataSet)
+        binding.barChart.data = barData
+
+        val xAxis = binding.barChart.xAxis
+        xAxis.valueFormatter = IndexAxisValueFormatter(breakdown.keys.toList())
+        xAxis.position = XAxis.XAxisPosition.BOTTOM
+        xAxis.granularity = 1f
+        xAxis.setDrawGridLines(false)
+
+        binding.barChart.apply {
+            description.isEnabled = false
+            legend.isEnabled = true
+            setFitBars(true)
+            animateY(1000)
+            invalidate()
+        }
     }
 
     private fun updateChartsFromTransactions(transactions: List<Transaction>) {
         val totals = transactions.groupBy { it.category }.mapValues { it.value.sumOf { txn -> txn.amount } }
-        updateCharts(totals)
+        updateCategoryBreakdown(totals)
     }
 
     private fun updateCategoryProgressBars(data: List<CategoryProgress>) {
@@ -151,43 +184,6 @@ class HomeFragment : Fragment() {
         p < 50 -> ContextCompat.getColor(requireContext(), R.color.progress_green)
         p < 80 -> ContextCompat.getColor(requireContext(), R.color.progress_yellow)
         else -> ContextCompat.getColor(requireContext(), R.color.progress_red)
-    }
-
-    private fun updateDateRangeDisplay() {
-        binding.tvDateRange.text = when (viewModel.currentFilter) {
-            HomeViewModel.DateFilter.DAILY -> "Today"
-            HomeViewModel.DateFilter.WEEKLY -> "This Week"
-            HomeViewModel.DateFilter.MONTHLY -> "This Month"
-            HomeViewModel.DateFilter.CUSTOM -> viewModel.customRangeFormatted()
-        }
-    }
-
-    private fun setupDateFilterSpinner() {
-        val opts = listOf("Daily", "Weekly", "Monthly", "Custom")
-        ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, opts).also {
-            it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-            binding.spinnerDateFilter.adapter = it
-        }
-        binding.spinnerDateFilter.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, pos: Int, id: Long) {
-                if (pos == 3) return showCustomDatePickerDialog()
-                viewModel.setDateFilter(HomeViewModel.DateFilter.values()[pos])
-                updateDateRangeDisplay()
-            }
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
-        }
-    }
-
-    private fun showCustomDatePickerDialog() {
-        val cal = Calendar.getInstance()
-        DatePickerDialog(requireContext(), { _, y, m, d ->
-            val start = Calendar.getInstance().apply { set(y, m, d) }.time
-            DatePickerDialog(requireContext(), { _, y2, m2, d2 ->
-                viewModel.setCustomDateRange(start, Calendar.getInstance().apply { set(y2, m2, d2) }.time)
-                updateDateRangeDisplay()
-            }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH))
-                .apply { datePicker.minDate = start.time }.show()
-        }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show()
     }
 
     private fun showSetGoalsDialog() {

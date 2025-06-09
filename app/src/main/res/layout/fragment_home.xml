@@ -120,22 +120,39 @@
                     android:textSize="18sp"
                     android:textStyle="bold" />
 
+                <!-- Short-Term Goal -->
                 <ProgressBar
-                    android:id="@+id/progressBudgetGoals"
+                    android:id="@+id/progressShortTermGoal"
                     style="?android:attr/progressBarStyleHorizontal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:progress="75"
                     android:progressTint="@color/progress_primary" />
 
                 <TextView
-                    android:id="@+id/tvBudgetGoalsDetails"
+                    android:id="@+id/tvShortTermGoalDetails"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:textColor="@color/text_color_secondary"
-                    tools:text="R3,750 assigned / R1,250 remaining" />
+                    tools:text="Short-Term: R0,00 assigned / R0,00 remaining" />
+
+                <!-- Long-Term Goal -->
+                <ProgressBar
+                    android:id="@+id/progressLongTermGoal"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:progressTint="@color/progress_primary" />
+
+                <TextView
+                    android:id="@+id/tvLongTermGoalDetails"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textColor="@color/text_color_secondary"
+                    tools:text="Long-Term: R0,00 assigned / R0,00 remaining" />
 
                 <Button
                     android:id="@+id/setGoalsButton"
@@ -201,8 +218,10 @@
                     android:textSize="18sp"
                     android:textStyle="bold" />
 
-                <com.github.mikephil.charting.charts.PieChart
-                    android:id="@+id/pieChart"
+
+                <!-- Replace the PieChart with this BarChart -->
+                <com.github.mikephil.charting.charts.BarChart
+                    android:id="@+id/barChart"
                     android:layout_width="match_parent"
                     android:layout_height="250dp"
                     android:layout_marginTop="16dp" />

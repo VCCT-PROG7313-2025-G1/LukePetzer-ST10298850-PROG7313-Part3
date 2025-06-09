@@ -5,6 +5,7 @@ import com.github.mikephil.charting.charts.BarChart
 import com.github.mikephil.charting.charts.PieChart
 import com.github.mikephil.charting.components.Legend
 import com.github.mikephil.charting.components.XAxis
+import com.github.mikephil.charting.components.LimitLine
 import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import com.github.mikephil.charting.formatter.PercentFormatter
@@ -47,6 +48,30 @@ object ChartUtils {
             animateY(1000)
             invalidate()
         }
+    }
+    fun addBudgetLinesToChart(barChart: BarChart, minBudget: Float, maxBudget: Float) {
+        val maxBudgetLine = LimitLine(maxBudget, "Max Budget")
+        maxBudgetLine.apply {
+            labelPosition = LimitLine.LimitLabelPosition.RIGHT_TOP
+            textSize = 10f
+            lineColor = Color.BLACK
+            lineWidth = 1f
+            textColor = Color.BLACK
+        }
+
+        val minBudgetLine = LimitLine(minBudget, "Min Budget")
+        minBudgetLine.apply {
+            labelPosition = LimitLine.LimitLabelPosition.RIGHT_TOP
+            textSize = 10f
+            lineColor = Color.BLACK
+            lineWidth = 1f
+            textColor = Color.BLACK
+        }
+
+        barChart.axisLeft.removeAllLimitLines()
+        barChart.axisLeft.addLimitLine(maxBudgetLine)
+        barChart.axisLeft.addLimitLine(minBudgetLine)
+        barChart.invalidate()
     }
 
     fun configurePieChart(pieChart: PieChart, categoryTotals: Map<String, Double>) {

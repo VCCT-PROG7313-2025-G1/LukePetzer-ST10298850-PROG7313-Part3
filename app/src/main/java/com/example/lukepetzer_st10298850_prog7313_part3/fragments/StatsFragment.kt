@@ -32,6 +32,7 @@ class StatsFragment : Fragment() {
     private val binding get() = _binding!!
     private val viewModel: StatsViewModel by viewModels()
 
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentStatsBinding.inflate(inflater, container, false)
         return binding.root

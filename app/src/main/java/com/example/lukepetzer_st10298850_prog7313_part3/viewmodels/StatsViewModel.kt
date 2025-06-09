@@ -92,18 +92,18 @@ class StatsViewModel(application: Application) : AndroidViewModel(application) {
             .collection("transactions")
             .whereGreaterThanOrEqualTo("date", startDate.toInstant().toEpochMilli())
             .whereLessThanOrEqualTo("date", endDate.toInstant().toEpochMilli())
-            .whereEqualTo("type", "expense")
+            .whereEqualTo("type", "Expense")
             .get()
             .addOnSuccessListener { result ->
                 val expenses = result.mapNotNull { doc ->
                     val amount = doc.getDouble("amount") ?: return@mapNotNull null
-                    val date = doc.getDate("date") ?: return@mapNotNull null
+                    val date = doc.getLong("date") ?: return@mapNotNull null
                     Transaction(
                         id = doc.id,
                         userId = userId,
                         amount = amount,
-                        date = date.time, // Convert Date to Long timestamp
-                        type = "expense",
+                        date = date, // Convert Date to Long timestamp
+                        type = "Expense",
                         category = doc.getString("category") ?: ""
                     )
                 }
