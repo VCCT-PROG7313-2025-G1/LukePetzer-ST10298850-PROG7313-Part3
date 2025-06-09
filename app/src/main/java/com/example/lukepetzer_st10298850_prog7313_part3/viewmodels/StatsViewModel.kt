@@ -32,10 +32,11 @@ class StatsViewModel(application: Application) : AndroidViewModel(application) {
         val start = Calendar.getInstance().apply { set(Calendar.DAY_OF_MONTH, 1) }.time
         val end = Date()
 
-        db.collection("transactions")
-            .whereEqualTo("userId", userId)
-            .whereGreaterThanOrEqualTo("date", start)
-            .whereLessThanOrEqualTo("date", end)
+        db.collection("users")
+            .document(userId)
+            .collection("transactions")
+            .whereGreaterThanOrEqualTo("date", start.toInstant().toEpochMilli())
+            .whereLessThanOrEqualTo("date", end.toInstant().toEpochMilli())
             .get()
             .addOnSuccessListener { result ->
                 var income = 0.0
@@ -86,10 +87,11 @@ class StatsViewModel(application: Application) : AndroidViewModel(application) {
         val startDate = calendar.time
         val endDate = Date()
 
-        db.collection("transactions")
-            .whereEqualTo("userId", userId)
-            .whereGreaterThanOrEqualTo("date", startDate)
-            .whereLessThanOrEqualTo("date", endDate)
+        db.collection("users")
+            .document(userId)
+            .collection("transactions")
+            .whereGreaterThanOrEqualTo("date", startDate.toInstant().toEpochMilli())
+            .whereLessThanOrEqualTo("date", endDate.toInstant().toEpochMilli())
             .whereEqualTo("type", "expense")
             .get()
             .addOnSuccessListener { result ->

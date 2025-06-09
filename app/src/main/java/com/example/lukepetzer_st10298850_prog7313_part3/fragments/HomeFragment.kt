@@ -194,12 +194,15 @@ class HomeFragment : Fragment() {
         val dialog = layoutInflater.inflate(R.layout.dialog_set_goals, null)
         val shortInput = dialog.findViewById<EditText>(R.id.etShortTermGoal)
         val maxInput = dialog.findViewById<EditText>(R.id.etMaxGoal)
+        val sharedPref = requireActivity().getPreferences(Context.MODE_PRIVATE)
+        val userId = sharedPref.getString("USER_ID", "")
+
         AlertDialog.Builder(requireContext())
             .setTitle("Set Goals")
             .setView(dialog)
             .setPositiveButton("Save") { _, _ ->
                 viewModel.saveBudgetGoal(
-                    FirebaseAuth.getInstance().currentUser?.uid ?: "",
+                    userId.toString(),
                     shortInput.text.toString().toDoubleOrNull() ?: 0.0,
                     maxInput.text.toString().toDoubleOrNull() ?: 0.0
                 )
